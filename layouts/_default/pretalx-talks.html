@@ -1,0 +1,24 @@
+{{ define "main" }}
+{{- $prefix := .Params.pretalx_prefix -}}
+{{- $allTalks := index site.Data.pretalx $prefix "talks" | default slice -}}
+
+<header class="pretalx-talks__header">
+  <h1 class="pretalx-talks__title">{{ .Title }}</h1>
+</header>
+
+{{ with .Content }}
+<div class="pretalx-talks__description">
+  {{ . }}
+</div>
+{{ end }}
+
+{{- if eq (len $allTalks) 0 -}}
+  <p class="pretalx-talks__empty">No talks available yet.</p>
+{{- else -}}
+<section class="pretalx-talks__list">
+  {{- range $allTalks -}}
+    {{ partial "pretalx/talk-card.html" (dict "talk" . "prefix" $prefix "linked" true) }}
+  {{- end -}}
+</section>
+{{- end -}}
+{{ end }}

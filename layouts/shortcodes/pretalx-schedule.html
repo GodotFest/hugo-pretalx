@@ -1,0 +1,9 @@
+{{/* pretalx-schedule: Renders the full schedule timeline for an event. */}}
+{{- $prefix := .Get "prefix" -}}
+{{- if not $prefix -}}
+  {{- errorf "[pretalx-schedule] Missing required parameter: prefix" -}}
+{{- end -}}
+
+{{- $allTalks := index site.Data.pretalx $prefix "talks" | default slice -}}
+
+{{ partial "pretalx/schedule-timeline.html" (dict "talks" $allTalks "prefix" $prefix) }}

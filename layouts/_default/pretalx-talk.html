@@ -1,0 +1,71 @@
+{{ define "main" }}
+{{- $prefix := .Params.pretalx_prefix -}}
+{{- $code := .Params.pretalx_code -}}
+{{- $allTalks := index site.Data.pretalx $prefix "talks" | default slice -}}
+
+{{/* Look up this talk by its Pretalx code */}}
+{{- $talk := dict -}}
+{{- range $allTalks -}}
+  {{- if eq (index . "code") $code -}}
+    {{- $talk = . -}}
+  {{- end -}}
+{{- end -}}
+
+<article class="pretalx-talk">
+  <header class="pretalx-talk__header">
+    <h1 class="pretalx-talk__title">{{ .Title }}</h1>
+
+    {{- with $talk -}}
+      {{ partial "pretalx/talk-meta.html" (dict "talk" . "context" $) }}
+    {{- end -}}
+  </header>
+
+  {{/* Speakers */}}
+  {{- with $talk.speakers -}}
+  <section class="pretalx-talk__speakers">
+    {{- range . -}}
+      {{ partial "pretalx/speaker-card.html" (dict "speaker" . "prefix" $prefix "linked" true) }}
+    {{- end -}}
+  </section>
+  {{- end -}}
+
+  {{/* Abstract */}}
+  {{- with $talk.abstract -}}
+  <section class="pretalx-talk__abstract">
+    {{ . | markdownify }}
+  </section>
+  {{- end -}}
+
+  {{/* Description (if different from abstract) */}}
+  {{- with $talk.description -}}
+    {{- if ne . $talk.abstract -}}
+    <section class="pretalx-talk__description">
+      {{ . | markdownify }}
+    </section>
+    {{- end -}}
+  {{- end -}}
+
+  {{/* Resources */}}
+  {{- with $talk.resources -}}
+  <section class="pretalx-talk__resources">
+    <h2>Resources</h2>
+    <ul>
+      {{- range . -}}
+        <li>
+          <a href="{{ .resource }}" target="_blank" rel="noopener noreferrer">
+            {{ .description | default .resource }}
+          </a>
+        </li>
+      {{- end -}}
+    </ul>
+  </section>
+  {{- end -}}
+
+  {{/* Manual content added below front matter (e.g. video embeds) */}}
+  {{- with .Content -}}
+  <section class="pretalx-talk__content">
+    {{ . }}
+  </section>
+  {{- end -}}
+</article>
+{{ end }}

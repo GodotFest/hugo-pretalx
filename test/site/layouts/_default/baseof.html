@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="{{ .Site.Language.Lang }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ .Title }} | {{ .Site.Title }}</title>
+</head>
+<body>
+  <nav>
+    <a href="/">Home</a>
+    <a href="/2025/talks/">Talks</a>
+    <a href="/2025/speakers/">Speakers</a>
+    <a href="/2025/schedule/">Schedule</a>
+  </nav>
+  <main>
+    {{ block "main" . }}{{ end }}
+  </main>
+</body>
+</html>

@@ -1,0 +1,61 @@
+{{ define "main" }}
+{{- $prefix := .Params.pretalx_prefix -}}
+{{- $code := .Params.pretalx_code -}}
+{{- $allSpeakers := index site.Data.pretalx $prefix "speakers" | default slice -}}
+{{- $allTalks := index site.Data.pretalx $prefix "talks" | default slice -}}
+
+{{/* Look up this speaker by Pretalx code */}}
+{{- $speaker := dict -}}
+{{- range $allSpeakers -}}
+  {{- if eq (index . "code") $code -}}
+    {{- $speaker = . -}}
+  {{- end -}}
+{{- end -}}
+
+<article class="pretalx-speaker">
+  <header class="pretalx-speaker__header">
+    {{- with $speaker.avatar -}}
+    <div class="pretalx-speaker__avatar pretalx-speaker__avatar--large">
+      <img src="{{ . }}" alt="{{ $speaker.name }}" loading="lazy" decoding="async">
+    </div>
+    {{- end -}}
+    <h1 class="pretalx-speaker__name">{{ .Title }}</h1>
+  </header>
+
+  {{/* Biography */}}
+  {{- with $speaker.biography -}}
+  <section class="pretalx-speaker__biography">
+    {{ . | markdownify }}
+  </section>
+  {{- end -}}
+
+  {{/* Manual content (e.g. social links, custom info) */}}
+  {{- with .Content -}}
+  <section class="pretalx-speaker__content">
+    {{ . }}
+  </section>
+  {{- end -}}
+
+  {{/* Talks by this speaker */}}
+  {{- $speakerTalks := slice -}}
+  {{- range $allTalks -}}
+    {{- $talk := . -}}
+    {{- range .speakers -}}
+      {{- if eq (index . "code") $code -}}
+        {{- $speakerTalks = $speakerTalks | append $talk -}}
+      {{- end -}}
+    {{- end -}}
+  {{- end -}}
+
+  {{- if gt (len $speakerTalks) 0 -}}
+  <section class="pretalx-speaker__talks">
+    <h2>Sessions</h2>
+    <div class="pretalx-speaker__talks-list">
+      {{- range $speakerTalks -}}
+        {{ partial "pretalx/talk-card.html" (dict "talk" . "prefix" $prefix "linked" true) }}
+      {{- end -}}
+    </div>
+  </section>
+  {{- end -}}
+</article>
+{{ end }}

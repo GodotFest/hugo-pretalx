@@ -1,0 +1,78 @@
+{{/*
+  pretalx/talk-card.html — Renders a single talk card for listings.
+
+  Params:
+    .talk    — A talk object from the Pretalx API
+    .prefix  — The event prefix (e.g. "2025") for linking
+    .linked  — If true, wrap title in a link to the talk page (default: false)
+*/}}
+{{- $talk := .talk -}}
+{{- $prefix := .prefix | default "" -}}
+{{- $linked := .linked | default false -}}
+{{- $title := $talk.title | default "Untitled" -}}
+{{- $slug := $title | urlize -}}
+{{- $href := "" -}}
+{{- if and $linked $prefix -}}
+  {{- $href = printf "/%s/talks/%s/" $prefix $slug -}}
+{{- end -}}
+
+<article class="pretalx-talk-card" {{ with $talk.slot }}data-room="{{ .room }}" data-start="{{ .start }}"{{ end }}>
+  <div class="pretalx-talk-card__body">
+    {{/* Title */}}
+    <h3 class="pretalx-talk-card__title">
+      {{- if $href -}}
+        <a href="{{ $href }}" class="pretalx-talk-card__link">{{ $title }}</a>
+      {{- else -}}
+        {{ $title }}
+      {{- end -}}
+    </h3>
+
+    {{/* Metadata */}}
+    <div class="pretalx-talk-card__meta">
+      {{- with $talk.submission_type -}}
+        {{- $type := . -}}
+        {{- if reflect.IsMap . -}}
+          {{- $type = partial "pretalx/helpers.html" (dict "func" "localized" "value" . "lang" "en") -}}
+        {{- end -}}
+        <span class="pretalx-talk-card__type">{{ $type }}</span>
+      {{- end -}}
+
+      {{- with $talk.duration -}}
+        <span class="pretalx-talk-card__duration">{{ . }} min</span>
+      {{- end -}}
+
+      {{- with $talk.slot -}}
+        {{- with .room -}}
+          {{- $room := . -}}
+          {{- if reflect.IsMap . -}}
+            {{- $room = partial "pretalx/helpers.html" (dict "func" "localized" "value" . "lang" "en") -}}
+          {{- end -}}
+          <span class="pretalx-talk-card__room">{{ $room }}</span>
+        {{- end -}}
+      {{- end -}}
+
+      {{- with $talk.content_locale -}}
+        <span class="pretalx-talk-card__language">{{ . }}</span>
+      {{- end -}}
+    </div>
+
+    {{/* Abstract excerpt */}}
+    {{- with $talk.abstract -}}
+      <p class="pretalx-talk-card__abstract">{{ . | plainify | truncate 200 }}</p>
+    {{- end -}}
+  </div>
+
+  {{/* Speakers */}}
+  {{- with $talk.speakers -}}
+  <div class="pretalx-talk-card__speakers">
+    {{- range . -}}
+      <div class="pretalx-talk-card__speaker">
+        {{- with .avatar -}}
+          <img src="{{ . }}" alt="{{ $.name }}" class="pretalx-talk-card__speaker-avatar" loading="lazy" decoding="async">
+        {{- end -}}
+        <span class="pretalx-talk-card__speaker-name">{{ .name }}</span>
+      </div>
+    {{- end -}}
+  </div>
+  {{- end -}}
+</article>

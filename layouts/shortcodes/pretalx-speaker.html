@@ -1,0 +1,23 @@
+{{/* pretalx-speaker: Renders a single speaker card by Pretalx code. */}}
+{{- $code := .Get "code" -}}
+{{- $prefix := .Get "prefix" -}}
+{{- if not $code -}}
+  {{- errorf "[pretalx-speaker] Missing required parameter: code" -}}
+{{- end -}}
+{{- if not $prefix -}}
+  {{- errorf "[pretalx-speaker] Missing required parameter: prefix" -}}
+{{- end -}}
+
+{{- $allSpeakers := index site.Data.pretalx $prefix "speakers" | default slice -}}
+{{- $speaker := dict -}}
+{{- range $allSpeakers -}}
+  {{- if eq (index . "code") $code -}}
+    {{- $speaker = . -}}
+  {{- end -}}
+{{- end -}}
+
+{{- if $speaker.name -}}
+  {{ partial "pretalx/speaker-card.html" (dict "speaker" $speaker "prefix" $prefix "linked" true) }}
+{{- else -}}
+  <p class="pretalx-error">Speaker with code "{{ $code }}" not found in {{ $prefix }} data.</p>
+{{- end -}}

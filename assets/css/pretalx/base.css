@@ -1,0 +1,293 @@
+/*
+ * hugo-pretalx — Base structural CSS
+ *
+ * This stylesheet provides layout and structure only (no colors, fonts, or
+ * brand-specific styles). Consuming sites override these with their own CSS.
+ *
+ * To include in your site:
+ *   @import "css/pretalx/base.css";
+ *   — or reference it via Hugo Pipes in your layout.
+ */
+
+/* ── Speakers Grid ───────────────────────────────────────────── */
+.pretalx-speakers__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 1.5rem;
+}
+
+/* ── Speaker Card ────────────────────────────────────────────── */
+.pretalx-speaker-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.pretalx-speaker-card__link {
+  text-decoration: none;
+  color: inherit;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.pretalx-speaker-card__avatar {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  overflow: hidden;
+  margin-bottom: 0.75rem;
+  flex-shrink: 0;
+}
+
+.pretalx-speaker-card__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.pretalx-speaker-card__placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  font-weight: 700;
+  background: #e5e7eb;
+  color: #6b7280;
+}
+
+.pretalx-speaker-card__name {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.pretalx-speaker-card__bio {
+  margin: 0.25rem 0 0;
+  font-size: 0.85rem;
+  opacity: 0.7;
+}
+
+/* ── Speaker Detail ──────────────────────────────────────────── */
+.pretalx-speaker__header {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.pretalx-speaker__avatar--large {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.pretalx-speaker__avatar--large img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.pretalx-speaker__name {
+  margin: 0;
+}
+
+.pretalx-speaker__talks-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* ── Talks List ──────────────────────────────────────────────── */
+.pretalx-talks__list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* ── Talk Card ───────────────────────────────────────────────── */
+.pretalx-talk-card {
+  padding: 1.25rem;
+  border-radius: 0.5rem;
+  border: 1px solid #e5e7eb;
+}
+
+.pretalx-talk-card__link {
+  text-decoration: none;
+  color: inherit;
+}
+
+.pretalx-talk-card__title {
+  margin: 0 0 0.5rem;
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.pretalx-talk-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  font-size: 0.85rem;
+  opacity: 0.7;
+  margin-bottom: 0.75rem;
+}
+
+.pretalx-talk-card__abstract {
+  margin: 0;
+  font-size: 0.9rem;
+  opacity: 0.8;
+}
+
+.pretalx-talk-card__speakers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.pretalx-talk-card__speaker {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.pretalx-talk-card__speaker-avatar {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.pretalx-talk-card__speaker-name {
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+/* ── Talk Detail ─────────────────────────────────────────────── */
+.pretalx-talk__speakers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin: 1.5rem 0;
+}
+
+.pretalx-talk__abstract,
+.pretalx-talk__description,
+.pretalx-talk__content {
+  margin: 1.5rem 0;
+  max-width: 65ch;
+}
+
+/* ── Talk Meta ───────────────────────────────────────────────── */
+.pretalx-talk-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  font-size: 0.9rem;
+  margin-top: 0.5rem;
+}
+
+.pretalx-talk-meta__no-recording {
+  opacity: 0.6;
+}
+
+/* ── Schedule ────────────────────────────────────────────────── */
+.pretalx-schedule__tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.pretalx-schedule__tab {
+  padding: 0.5rem 1rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.375rem;
+  background: transparent;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.pretalx-schedule__tab.is-active {
+  font-weight: 700;
+  border-color: currentColor;
+}
+
+.pretalx-schedule__filters {
+  display: flex;
+  gap: 0.375rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.pretalx-schedule__filter {
+  padding: 0.375rem 0.75rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 9999px;
+  background: transparent;
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+
+.pretalx-schedule__filter.is-active {
+  font-weight: 700;
+  border-color: currentColor;
+}
+
+.pretalx-schedule__day[hidden] {
+  display: none;
+}
+
+.pretalx-schedule__slot {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.pretalx-schedule__time {
+  flex-shrink: 0;
+  width: 4rem;
+  font-weight: 700;
+  font-size: 0.9rem;
+  padding-top: 1.25rem;
+}
+
+.pretalx-schedule__slot-talks {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.pretalx-schedule__entry[hidden] {
+  display: none;
+}
+
+/* ── Responsive ──────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .pretalx-speakers__grid {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 1rem;
+  }
+
+  .pretalx-speaker-card__avatar {
+    width: 72px;
+    height: 72px;
+  }
+
+  .pretalx-schedule__slot {
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .pretalx-schedule__time {
+    width: auto;
+    padding-top: 0;
+  }
+}

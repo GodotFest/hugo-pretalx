@@ -1,0 +1,64 @@
+{{/*
+  pretalx/talk-meta.html — Renders metadata badges for a talk.
+
+  Params:
+    .talk    — A single talk object from the Pretalx API
+    .context — The page context (for site access)
+*/}}
+{{- $talk := .talk -}}
+
+<div class="pretalx-talk-meta">
+  {{/* Submission type (e.g. "Talk", "Workshop") */}}
+  {{- with $talk.submission_type -}}
+    {{- $type := . -}}
+    {{- if reflect.IsMap . -}}
+      {{- $type = partial "pretalx/helpers.html" (dict "func" "localized" "value" . "lang" "en") -}}
+    {{- end -}}
+    <span class="pretalx-talk-meta__type">{{ $type }}</span>
+  {{- end -}}
+
+  {{/* Track */}}
+  {{- with $talk.track -}}
+    {{- $track := . -}}
+    {{- if reflect.IsMap . -}}
+      {{- $track = partial "pretalx/helpers.html" (dict "func" "localized" "value" . "lang" "en") -}}
+    {{- end -}}
+    <span class="pretalx-talk-meta__track">{{ $track }}</span>
+  {{- end -}}
+
+  {{/* Duration */}}
+  {{- with $talk.duration -}}
+    <span class="pretalx-talk-meta__duration">{{ . }} min</span>
+  {{- end -}}
+
+  {{/* Room */}}
+  {{- with $talk.slot -}}
+    {{- with .room -}}
+      {{- $room := . -}}
+      {{- if reflect.IsMap . -}}
+        {{- $room = partial "pretalx/helpers.html" (dict "func" "localized" "value" . "lang" "en") -}}
+      {{- end -}}
+      <span class="pretalx-talk-meta__room" data-room="{{ $room }}">{{ $room }}</span>
+    {{- end -}}
+  {{- end -}}
+
+  {{/* Language */}}
+  {{- with $talk.content_locale -}}
+    <span class="pretalx-talk-meta__language">{{ . }}</span>
+  {{- end -}}
+
+  {{/* Time */}}
+  {{- with $talk.slot -}}
+    {{- with .start -}}
+      <time class="pretalx-talk-meta__time" datetime="{{ . }}">
+        {{- $t := time . -}}
+        {{ $t.Format "Mon, 02 Jan 15:04" }}
+      </time>
+    {{- end -}}
+  {{- end -}}
+
+  {{/* Recording status */}}
+  {{- if $talk.do_not_record -}}
+    <span class="pretalx-talk-meta__no-recording">Not recorded</span>
+  {{- end -}}
+</div>

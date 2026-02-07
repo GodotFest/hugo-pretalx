@@ -1,0 +1,71 @@
+{{/* pretalx-talks: Renders a filterable list of talks. Supports type, speaker, and track filters. */}}
+{{- $prefix := .Get "prefix" -}}
+{{- if not $prefix -}}
+  {{- errorf "[pretalx-talks] Missing required parameter: prefix" -}}
+{{- end -}}
+
+{{- $filterType := .Get "type" | default "" -}}
+{{- $filterSpeaker := .Get "speaker" | default "" -}}
+{{- $filterTrack := .Get "track" | default "" -}}
+
+{{- $allTalks := index site.Data.pretalx $prefix "talks" | default slice -}}
+
+{{/* Apply filters */}}
+{{- $filtered := slice -}}
+{{- range $allTalks -}}
+  {{- $include := true -}}
+
+  {{- if and $include $filterType -}}
+    {{- $type := "" -}}
+    {{- with .submission_type -}}
+      {{- if reflect.IsMap . -}}
+        {{- $type = partial "pretalx/helpers.html" (dict "func" "localized" "value" . "lang" "en") -}}
+      {{- else -}}
+        {{- $type = (print .) -}}
+      {{- end -}}
+    {{- end -}}
+    {{- if ne $type $filterType -}}
+      {{- $include = false -}}
+    {{- end -}}
+  {{- end -}}
+
+  {{- if and $include $filterSpeaker -}}
+    {{- $found := false -}}
+    {{- range .speakers -}}
+      {{- if eq (index . "code") $filterSpeaker -}}
+        {{- $found = true -}}
+      {{- end -}}
+    {{- end -}}
+    {{- if not $found -}}
+      {{- $include = false -}}
+    {{- end -}}
+  {{- end -}}
+
+  {{- if and $include $filterTrack -}}
+    {{- $track := "" -}}
+    {{- with .track -}}
+      {{- if reflect.IsMap . -}}
+        {{- $track = partial "pretalx/helpers.html" (dict "func" "localized" "value" . "lang" "en") -}}
+      {{- else -}}
+        {{- $track = (print .) -}}
+      {{- end -}}
+    {{- end -}}
+    {{- if ne $track $filterTrack -}}
+      {{- $include = false -}}
+    {{- end -}}
+  {{- end -}}
+
+  {{- if $include -}}
+    {{- $filtered = $filtered | append . -}}
+  {{- end -}}
+{{- end -}}
+
+{{- if eq (len $filtered) 0 -}}
+  <p class="pretalx-talks__empty">No talks match the given criteria.</p>
+{{- else -}}
+<div class="pretalx-talks__list">
+  {{- range $filtered -}}
+    {{ partial "pretalx/talk-card.html" (dict "talk" . "prefix" $prefix "linked" true) }}
+  {{- end -}}
+</div>
+{{- end -}}

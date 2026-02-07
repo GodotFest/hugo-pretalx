@@ -1,0 +1,40 @@
+{{/*
+  pretalx/speaker-card.html — Renders a single speaker card.
+
+  Params:
+    .speaker — A speaker object (from Pretalx talks[].speakers or speakers endpoint)
+    .prefix  — The event prefix (e.g. "2025") for linking
+    .linked  — If true, wrap in a link to the speaker's page (default: false)
+*/}}
+{{- $speaker := .speaker -}}
+{{- $prefix := .prefix | default "" -}}
+{{- $linked := .linked | default false -}}
+{{- $name := $speaker.name | default "Unknown Speaker" -}}
+{{- $slug := $name | urlize -}}
+{{- $href := "" -}}
+{{- if and $linked $prefix -}}
+  {{- $href = printf "/%s/speakers/%s/" $prefix $slug -}}
+{{- end -}}
+
+<div class="pretalx-speaker-card">
+  {{- if $href }}<a href="{{ $href }}" class="pretalx-speaker-card__link">{{ end -}}
+
+  <div class="pretalx-speaker-card__avatar">
+    {{- with $speaker.avatar -}}
+      <img src="{{ . }}" alt="{{ $name }}" loading="lazy" decoding="async" class="pretalx-speaker-card__img">
+    {{- else -}}
+      <div class="pretalx-speaker-card__placeholder" aria-hidden="true">
+        {{ substr $name 0 1 | upper }}
+      </div>
+    {{- end -}}
+  </div>
+
+  <div class="pretalx-speaker-card__info">
+    <h3 class="pretalx-speaker-card__name">{{ $name }}</h3>
+    {{- with $speaker.biography -}}
+      <p class="pretalx-speaker-card__bio">{{ . | plainify | truncate 120 }}</p>
+    {{- end -}}
+  </div>
+
+  {{- if $href }}</a>{{ end -}}
+</div>

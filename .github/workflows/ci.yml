@@ -1,0 +1,69 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  build-cli:
+    name: Build CLI
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+
+      - name: Build
+        run: go build -v -o hugo-pretalx .
+
+      - name: Verify binary
+        run: ./hugo-pretalx version
+
+  test-site:
+    name: Build Test Site
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+
+      - name: Setup Hugo
+        uses: peaceiris/actions-hugo@v3
+        with:
+          hugo-version: "0.139.0"
+          extended: true
+
+      - name: Build test site
+        working-directory: test/site
+        run: hugo --minify
+
+      - name: Verify output
+        working-directory: test/site
+        run: |
+          echo "Checking generated pages..."
+          test -f public/index.html
+          test -f public/2025/talks/index.html
+          test -f public/2025/speakers/index.html
+          test -f public/2025/schedule/index.html
+          test -f public/2025/talks/building-great-software/index.html
+          test -f public/2025/speakers/alice-johnson/index.html
+          echo "All expected pages exist."
+
+  lint:
+    name: Go Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+
+      - name: Vet
+        run: go vet ./...

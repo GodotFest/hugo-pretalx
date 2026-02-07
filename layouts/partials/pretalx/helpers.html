@@ -1,0 +1,49 @@
+{{/*
+  pretalx/helpers.html — Shared helper functions for hugo-pretalx templates.
+
+  Usage examples:
+
+  Resolve a potentially multi-language value to a string:
+    {{ partial "pretalx/helpers.html" (dict "func" "localized" "value" $talk.submission_type "lang" "en") }}
+
+  Slugify a string:
+    {{ partial "pretalx/helpers.html" (dict "func" "slugify" "value" "My Talk Title") }}
+
+  Format ISO datetime for display:
+    {{ partial "pretalx/helpers.html" (dict "func" "formatTime" "value" $talk.slot.start "format" "15:04") }}
+*/}}
+
+{{- $func := .func -}}
+
+{{- if eq $func "localized" -}}
+  {{- $val := .value -}}
+  {{- $lang := .lang | default "en" -}}
+  {{- if reflect.IsMap $val -}}
+    {{- $result := index $val $lang -}}
+    {{- if not $result -}}
+      {{- range $k, $v := $val -}}
+        {{- if not $result -}}{{- $result = $v -}}{{- end -}}
+      {{- end -}}
+    {{- end -}}
+    {{- return (print $result) -}}
+  {{- else -}}
+    {{- return (print $val) -}}
+  {{- end -}}
+
+{{- else if eq $func "slugify" -}}
+  {{- $val := .value | default "" -}}
+  {{- return ($val | urlize) -}}
+
+{{- else if eq $func "formatTime" -}}
+  {{- $val := .value | default "" -}}
+  {{- $fmt := .format | default "15:04" -}}
+  {{- if $val -}}
+    {{- $t := time $val -}}
+    {{- return ($t.Format $fmt) -}}
+  {{- else -}}
+    {{- return "" -}}
+  {{- end -}}
+
+{{- else -}}
+  {{- errorf "[pretalx/helpers] Unknown function: %s" $func -}}
+{{- end -}}

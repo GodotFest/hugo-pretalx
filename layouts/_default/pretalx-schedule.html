@@ -1,0 +1,33 @@
+{{ define "main" }}
+{{- $prefix := .Params.pretalx_prefix -}}
+{{- $allTalks := index site.Data.pretalx $prefix "talks" | default slice -}}
+
+<header class="pretalx-schedule__header">
+  <h1 class="pretalx-schedule__title">{{ .Title }}</h1>
+</header>
+
+{{ with .Content }}
+<div class="pretalx-schedule__description">
+  {{ . }}
+</div>
+{{ end }}
+
+{{ partial "pretalx/schedule-timeline.html" (dict "talks" $allTalks "prefix" $prefix) }}
+
+{{/* Inject schedule data as JSON for client-side interactivity */}}
+<script id="pretalx-schedule-data" type="application/json">
+  {{- $scheduled := slice -}}
+  {{- range $allTalks -}}
+    {{- if .slot -}}
+      {{- $scheduled = $scheduled | append . -}}
+    {{- end -}}
+  {{- end -}}
+  {{- $scheduled | jsonify | safeHTML -}}
+</script>
+
+{{ $scheduleJS := resources.Get "js/pretalx/schedule.js" }}
+{{ if $scheduleJS }}
+  {{ $scheduleJS = $scheduleJS | resources.Minify | resources.Fingerprint }}
+  <script type="text/javascript" src="{{ $scheduleJS.RelPermalink }}" integrity="{{ $scheduleJS.Data.Integrity }}" defer></script>
+{{ end }}
+{{ end }}

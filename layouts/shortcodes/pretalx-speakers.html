@@ -1,0 +1,17 @@
+{{/* pretalx-speakers: Renders a grid of all speakers for an event. */}}
+{{- $prefix := .Get "prefix" -}}
+{{- if not $prefix -}}
+  {{- errorf "[pretalx-speakers] Missing required parameter: prefix" -}}
+{{- end -}}
+
+{{- $allSpeakers := index site.Data.pretalx $prefix "speakers" | default slice -}}
+
+{{- if eq (len $allSpeakers) 0 -}}
+  <p class="pretalx-speakers__empty">No speakers announced yet.</p>
+{{- else -}}
+<div class="pretalx-speakers__grid">
+  {{- range $allSpeakers -}}
+    {{ partial "pretalx/speaker-card.html" (dict "speaker" . "prefix" $prefix "linked" true) }}
+  {{- end -}}
+</div>
+{{- end -}}
