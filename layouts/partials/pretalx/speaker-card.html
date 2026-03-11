@@ -10,7 +10,7 @@
 {{- $prefix := .prefix | default "" -}}
 {{- $linked := .linked | default false -}}
 {{- $name := $speaker.name | default "Unknown Speaker" -}}
-{{- $slug := $name | urlize -}}
+{{- $slug := ($name | urlize) | replace "/" "-" -}}
 {{- $href := "" -}}
 {{- if and $linked $prefix -}}
   {{- $href = printf "/%s/speakers/%s/" $prefix $slug -}}

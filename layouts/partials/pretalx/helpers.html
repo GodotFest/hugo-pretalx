@@ -19,29 +19,20 @@
   {{- $val := .value -}}
   {{- $lang := .lang | default "en" -}}
   {{- if reflect.IsMap $val -}}
-    {{- $result := index $val $lang -}}
-    {{- if not $result -}}
-      {{- range $k, $v := $val -}}
-        {{- if not $result -}}{{- $result = $v -}}{{- end -}}
-      {{- end -}}
-    {{- end -}}
-    {{- return (print $result) -}}
+    {{- print (index $val $lang) -}}
   {{- else -}}
-    {{- return (print $val) -}}
+    {{- print $val -}}
   {{- end -}}
 
 {{- else if eq $func "slugify" -}}
   {{- $val := .value | default "" -}}
-  {{- return ($val | urlize) -}}
+  {{- ($val | urlize) | replace "/" "-" -}}
 
 {{- else if eq $func "formatTime" -}}
   {{- $val := .value | default "" -}}
   {{- $fmt := .format | default "15:04" -}}
   {{- if $val -}}
-    {{- $t := time $val -}}
-    {{- return ($t.Format $fmt) -}}
-  {{- else -}}
-    {{- return "" -}}
+    {{- (time $val).Format $fmt -}}
   {{- end -}}
 
 {{- else -}}

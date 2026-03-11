@@ -2,6 +2,9 @@
 hugo-pretalx
 hugo-pretalx.exe
 
+# Dependencies
+node_modules/
+
 # Hugo output
 test/site/public/
 test/site/resources/

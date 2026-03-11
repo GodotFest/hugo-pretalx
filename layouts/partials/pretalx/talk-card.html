@@ -10,7 +10,7 @@
 {{- $prefix := .prefix | default "" -}}
 {{- $linked := .linked | default false -}}
 {{- $title := $talk.title | default "Untitled" -}}
-{{- $slug := $title | urlize -}}
+{{- $slug := ($title | urlize) | replace "/" "-" -}}
 {{- $href := "" -}}
 {{- if and $linked $prefix -}}
   {{- $href = printf "/%s/talks/%s/" $prefix $slug -}}

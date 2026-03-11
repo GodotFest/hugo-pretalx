@@ -1,0 +1,11 @@
+{
+  "instance": "https://pretalx.example.com",
+  "lang": "en",
+  "events": [
+    {
+      "event": "your-event-slug",
+      "prefix": "2025",
+      "tags": ["2025"]
+    }
+  ]
+}

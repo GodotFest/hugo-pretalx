@@ -1,0 +1,16 @@
+{
+  "name": "hugo-pretalx",
+  "private": true,
+  "description": "Pretalx integration for Hugo — CLI and Hugo module",
+  "scripts": {
+    "build": "go build -o hugo-pretalx .",
+    "test": "npm run build && npm run test:site",
+    "test:site": "cd test/site && hugo --minify",
+    "preview": "cd test/site && hugo server -D",
+    "hugo": "hugo",
+    "hugo:version": "hugo version"
+  },
+  "devDependencies": {
+    "hugo-extended": "0.120.4"
+  }
+}

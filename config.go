@@ -61,12 +61,17 @@ func LoadConfig(path, flagToken string) (*Config, error) {
 		}
 	}
 
-	// Override with environment variables
+	// Override with environment variables (support both PRETALX_TOKEN and PRETALX_API_TOKEN)
 	if v := os.Getenv("PRETALX_INSTANCE"); v != "" {
 		cfg.Instance = v
 	}
 	if v := os.Getenv("PRETALX_TOKEN"); v != "" {
 		cfg.Token = v
+	}
+	if cfg.Token == "" {
+		if v := os.Getenv("PRETALX_API_TOKEN"); v != "" {
+			cfg.Token = v
+		}
 	}
 
 	// Override with CLI flag

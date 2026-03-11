@@ -21,7 +21,16 @@ func runFetch(args []string) error {
 		return err
 	}
 
-	cfg, err := LoadConfig(*configPath, *token)
+	// Load .env from output dir so PRETALX_API_TOKEN / PRETALX_TOKEN are available (fixture fallback if absent)
+	loadEnvFromDir(*outputDir)
+
+	// If config path is the default, look for it inside the output dir (e.g. test/site/pretalx.json)
+	resolvedConfig := *configPath
+	if *configPath == "pretalx.json" {
+		resolvedConfig = filepath.Join(*outputDir, "pretalx.json")
+	}
+
+	cfg, err := LoadConfig(resolvedConfig, *token)
 	if err != nil {
 		return err
 	}
