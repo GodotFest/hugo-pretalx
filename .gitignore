@@ -5,7 +5,7 @@ hugo-pretalx.exe
 # Dependencies
 node_modules/
 
-# Hugo output
+# Hugo output (generated at build time; CI verifies, do not commit)
 test/site/public/
 test/site/resources/
 

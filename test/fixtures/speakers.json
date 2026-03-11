@@ -1,0 +1,16 @@
+[
+  {
+    "code": "SPK01",
+    "name": "Alice Johnson",
+    "biography": "Alice is a senior software engineer with 15 years of experience building developer tools and open-source projects.",
+    "submissions": ["TALK01"],
+    "avatar": null
+  },
+  {
+    "code": "SPK02",
+    "name": "Bob Smith",
+    "biography": "Bob is a QA architect who has been writing automated tests for over a decade.",
+    "submissions": ["TALK02"],
+    "avatar": null
+  }
+]

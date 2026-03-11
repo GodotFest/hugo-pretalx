@@ -1,0 +1,11 @@
+{
+  "instance": "http://127.0.0.1:9876",
+  "lang": "en",
+  "events": [
+    {
+      "event": "test-event",
+      "prefix": "2025",
+      "tags": ["2025"]
+    }
+  ]
+}

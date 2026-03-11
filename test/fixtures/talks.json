@@ -1,0 +1,56 @@
+[
+  {
+    "code": "TALK01",
+    "title": "Building Great Software",
+    "speakers": [
+      {
+        "name": "Alice Johnson",
+        "code": "SPK01",
+        "biography": "Senior engineer and open-source contributor.",
+        "avatar": null
+      }
+    ],
+    "submission_type": "Talk",
+    "track": "Development",
+    "state": "confirmed",
+    "abstract": "An overview of modern software engineering best practices.",
+    "description": null,
+    "duration": 30,
+    "do_not_record": false,
+    "content_locale": "en",
+    "slot": {
+      "start": "2025-11-11T10:00:00+01:00",
+      "end": "2025-11-11T10:30:00+01:00",
+      "room": "Main Stage",
+      "room_id": 1
+    },
+    "resources": []
+  },
+  {
+    "code": "TALK02",
+    "title": "Introduction to Testing",
+    "speakers": [
+      {
+        "name": "Bob Smith",
+        "code": "SPK02",
+        "biography": "QA architect and testing advocate.",
+        "avatar": null
+      }
+    ],
+    "submission_type": "Talk",
+    "track": "Quality",
+    "state": "confirmed",
+    "abstract": "A beginner-friendly introduction to software testing.",
+    "description": null,
+    "duration": 25,
+    "do_not_record": false,
+    "content_locale": "en",
+    "slot": {
+      "start": "2025-11-11T11:00:00+01:00",
+      "end": "2025-11-11T11:25:00+01:00",
+      "room": "Workshop Room",
+      "room_id": 2
+    },
+    "resources": []
+  }
+]

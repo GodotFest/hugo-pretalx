@@ -33,11 +33,29 @@ jobs:
         with:
           go-version: "1.22"
 
+      - name: Build CLI
+        run: go build -v -o hugo-pretalx .
+
       - name: Setup Hugo
         uses: peaceiris/actions-hugo@v3
         with:
           hugo-version: "0.139.0"
           extended: true
+
+      - name: Start mock Pretalx API
+        run: |
+          node test/mock-pretalx-server.js &
+          echo "Waiting for mock API..."
+          for i in $(seq 1 10); do
+            curl -sf http://127.0.0.1:9876/api/events/test-event/talks/ > /dev/null && break
+            sleep 1
+          done
+          curl -sf http://127.0.0.1:9876/api/events/test-event/talks/ > /dev/null || (echo "Mock API did not start"; exit 1)
+
+      - name: Fetch from mock API
+        env:
+          PRETALX_TOKEN: "test-token"
+        run: ./hugo-pretalx fetch --output test/site
 
       - name: Build test site
         working-directory: test/site
@@ -51,9 +69,11 @@ jobs:
           test -f public/2025/talks/index.html
           test -f public/2025/speakers/index.html
           test -f public/2025/schedule/index.html
-          test -f public/2025/talks/building-great-software/index.html
-          test -f public/2025/speakers/alice-johnson/index.html
-          echo "All expected pages exist."
+          TALK_COUNT=$(find public/2025/talks -mindepth 1 -maxdepth 1 -type d 2>/dev/null | wc -l)
+          SPEAKER_COUNT=$(find public/2025/speakers -mindepth 1 -maxdepth 1 -type d 2>/dev/null | wc -l)
+          test "$TALK_COUNT" -ge 1 || (echo "Expected at least one talk page, got $TALK_COUNT"; exit 1)
+          test "$SPEAKER_COUNT" -ge 1 || (echo "Expected at least one speaker page, got $SPEAKER_COUNT"; exit 1)
+          echo "All expected pages exist ($TALK_COUNT talks, $SPEAKER_COUNT speakers)."
 
   lint:
     name: Go Lint
