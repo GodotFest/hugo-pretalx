@@ -64,7 +64,7 @@
           f.classList.toggle('is-active', f === btn);
         });
 
-        // Show/hide entries
+        // Show/hide entries by room
         var entries = root.querySelectorAll('.pretalx-schedule__entry');
         entries.forEach(function (entry) {
           if (room === 'all' || entry.getAttribute('data-room') === room) {
@@ -74,11 +74,15 @@
           }
         });
 
-        // Hide empty time slots (all entries hidden)
+        // Hide empty time slots (no entry visible: not [hidden] and not .is-hidden)
         var slots = root.querySelectorAll('.pretalx-schedule__slot');
         slots.forEach(function (slot) {
-          var visibleEntries = slot.querySelectorAll('.pretalx-schedule__entry:not([hidden])');
-          if (visibleEntries.length === 0) {
+          var visibleEntries = slot.querySelectorAll('.pretalx-schedule__entry');
+          var visible = 0;
+          visibleEntries.forEach(function (e) {
+            if (!e.hasAttribute('hidden') && !e.classList.contains('is-hidden')) visible++;
+          });
+          if (visible === 0) {
             slot.setAttribute('hidden', '');
           } else {
             slot.removeAttribute('hidden');

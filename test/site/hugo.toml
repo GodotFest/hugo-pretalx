@@ -16,3 +16,5 @@ languageCode = "en"
   # For speaker page "talks grouped by year"; list event prefixes to show (newest first).
   eventYears = ["2025"]
   defaultEventYear = "2025"
+  # Room names that render as "special" events (e.g. registration, breaks) in the schedule timeline
+  # pretalxSpecialRooms = ["General info"]

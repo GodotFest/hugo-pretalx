@@ -1,12 +1,15 @@
 {{/*
   pretalx/schedule-timeline.html — Renders a full schedule timeline grouped by day and time.
+  Talks in a "special room" (see special_rooms param or params.pretalxSpecialRooms) are rendered as special events.
 
   Params:
-    .talks  — Array of talk objects from the Pretalx API
-    .prefix — The event prefix (e.g. "2025") for linking
+    .talks         — Array of talk objects from the Pretalx API
+    .prefix        — The event prefix (e.g. "2025") for linking
+    .special_rooms — Optional slice of room names that count as general/special events (default: site.Params.pretalxSpecialRooms)
 */}}
 {{- $talks := .talks | default slice -}}
 {{- $prefix := .prefix | default "" -}}
+{{- $specialRooms := .special_rooms | default site.Params.pretalxSpecialRooms | default slice -}}
 {{- $talksSection := site.GetPage (printf "/%s/talks" $prefix) -}}
 {{- $speakersSection := site.GetPage (printf "/%s/speakers" $prefix) -}}
 
@@ -18,29 +21,59 @@
   {{- end -}}
 {{- end -}}
 
-{{- if eq (len $scheduled) 0 -}}
+{{/* Build unified timeline items: regular talks + special-room talks as "special" entries */}}
+{{- $items := slice -}}
+{{- range $scheduled -}}
+  {{- $room := "" -}}
+  {{- with .slot.room -}}
+    {{- if reflect.IsMap . -}}
+      {{- $room = partial "pretalx/helpers.html" (dict "func" "localized" "value" . "lang" "en") -}}
+    {{- else -}}
+      {{- $room = . -}}
+    {{- end -}}
+  {{- end -}}
+  {{- $start := .slot.start -}}
+  {{- $dayKey := (time $start).Format "2006-01-02" -}}
+  {{- if in $specialRooms $room -}}
+    {{- $items = $items | append (dict "_start" $start "_day" $dayKey "_isSpecial" true "title" .title "room" $room "duration" .duration "slot" .slot) -}}
+  {{- else -}}
+    {{- $items = $items | append (dict "_start" $start "_day" $dayKey "_isSpecial" false "talk" .) -}}
+  {{- end -}}
+{{- end -}}
+{{- $items = sort $items "_start" -}}
+
+{{- if eq (len $items) 0 -}}
   <p class="pretalx-schedule__empty">No schedule available yet.</p>
 {{- else -}}
 
-  {{/* Collect unique days and rooms */}}
+  {{/* Unique days (ordered) */}}
   {{- $days := slice -}}
-  {{- $rooms := slice -}}
-  {{- range $scheduled -}}
-    {{- with .slot -}}
-      {{- $dayKey := (time .start).Format "2006-01-02" -}}
-      {{- if not (in $days $dayKey) -}}
-        {{- $days = $days | append $dayKey -}}
-      {{- end -}}
-      {{- $room := .room -}}
-      {{- if reflect.IsMap .room -}}
-        {{- $room = partial "pretalx/helpers.html" (dict "func" "localized" "value" .room "lang" "en") -}}
-      {{- end -}}
-      {{- if and $room (not (in $rooms $room)) -}}
-        {{- $rooms = $rooms | append $room -}}
-      {{- end -}}
+  {{- range $items -}}
+    {{- if not (in $days ._day) -}}
+      {{- $days = $days | append ._day -}}
     {{- end -}}
   {{- end -}}
   {{- $days = sort $days -}}
+
+  {{/* Unique rooms for filter (from both talk and special items) */}}
+  {{- $rooms := slice -}}
+  {{- range $items -}}
+    {{- $r := "" -}}
+    {{- if ._isSpecial -}}
+      {{- $r = .room -}}
+    {{- else -}}
+      {{- with .talk.slot.room -}}
+        {{- if reflect.IsMap . -}}
+          {{- $r = partial "pretalx/helpers.html" (dict "func" "localized" "value" . "lang" "en") -}}
+        {{- else -}}
+          {{- $r = . -}}
+        {{- end -}}
+      {{- end -}}
+    {{- end -}}
+    {{- if and $r (not (in $rooms $r)) -}}
+      {{- $rooms = $rooms | append $r -}}
+    {{- end -}}
+  {{- end -}}
 
   <section class="pretalx-schedule" data-pretalx-schedule>
 
@@ -70,7 +103,7 @@
     </div>
     {{- end -}}
 
-    {{/* Day panels */}}
+    {{/* Day panels: one panel per day, each containing timeline items in time order */}}
     {{- range $i, $day := $days -}}
     <div class="pretalx-schedule__day{{ if eq $i 0 }} is-active{{ end }}"
          id="pretalx-day-{{ $day }}"
@@ -78,24 +111,14 @@
          data-day="{{ $day }}"
          {{ if ne $i 0 }}hidden{{ end }}>
 
-      {{/* Collect and sort talks for this day */}}
-      {{- $dayTalks := slice -}}
-      {{- range $scheduled -}}
-        {{- $talkDay := (time .slot.start).Format "2006-01-02" -}}
-        {{- if eq $talkDay $day -}}
-          {{- $dayTalks = $dayTalks | append . -}}
-        {{- end -}}
-      {{- end -}}
-      {{- $dayTalks = sort $dayTalks "slot.start" -}}
+      {{- $currentTime := "" -}}{{- /* reset per day so first slot of day opens correctly */ -}}
+      {{- range $items -}}
+        {{- if ne ._day $day -}}{{- continue -}}{{- end -}}
 
-      {{/* Group by time */}}
-      {{- $currentTime := "" -}}
-      {{- range $dayTalks -}}
-        {{- $timeKey := (time .slot.start).Format "15:04" -}}
+        {{- $timeKey := (time ._start).Format "15:04" -}}
         {{- if ne $timeKey $currentTime -}}
           {{- if $currentTime -}}
-            </div>{{/* close previous pretalx-schedule__slot-talks */}}
-            </div>{{/* close previous pretalx-schedule__slot */}}
+            </div></div>
           {{- end -}}
           {{- $currentTime = $timeKey -}}
           <div class="pretalx-schedule__slot" data-time="{{ $timeKey }}">
@@ -104,23 +127,29 @@
         {{- end -}}
 
         {{- $room := "" -}}
-        {{- with .slot.room -}}
-          {{- if reflect.IsMap . -}}
-            {{- $room = partial "pretalx/helpers.html" (dict "func" "localized" "value" . "lang" "en") -}}
-          {{- else -}}
-            {{- $room = . -}}
+        {{- if ._isSpecial -}}
+          {{- $room = .room -}}
+        {{- else -}}
+          {{- with .talk.slot.room -}}
+            {{- if reflect.IsMap . -}}
+              {{- $room = partial "pretalx/helpers.html" (dict "func" "localized" "value" . "lang" "en") -}}
+            {{- else -}}
+              {{- $room = . -}}
+            {{- end -}}
           {{- end -}}
         {{- end -}}
 
         <div class="pretalx-schedule__entry" data-room="{{ $room }}">
-          {{ partial "pretalx/talk-card.html" (dict "talk" . "prefix" $prefix "linked" true "talksSection" $talksSection "speakersSection" $speakersSection) }}
+          {{- if ._isSpecial -}}
+            {{ partial "pretalx/special-card.html" (dict "title" .title "room" .room "duration" .duration "slot" .slot) }}
+          {{- else -}}
+            {{ partial "pretalx/talk-card.html" (dict "talk" .talk "prefix" $prefix "linked" true "talksSection" $talksSection "speakersSection" $speakersSection) }}
+          {{- end -}}
         </div>
       {{- end -}}
 
-      {{/* Close last time slot group */}}
       {{- if $currentTime -}}
-        </div>{{/* close pretalx-schedule__slot-talks */}}
-        </div>{{/* close pretalx-schedule__slot */}}
+        </div></div>
       {{- end -}}
     </div>
     {{- end -}}

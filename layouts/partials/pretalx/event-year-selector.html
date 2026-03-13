@@ -1,0 +1,62 @@
+{{/*
+  pretalx/event-year-selector.html — Event year/prefix switcher for multi-year sites.
+  Renders links to /{year}/talks/, /{year}/speakers/, /{year}/schedule/ for each entry in params.eventYears.
+  Pass .context (the current page) so the current prefix and section can be detected.
+
+  Site params:
+    eventYears — slice of prefixes (e.g. ["2025", "2024"])
+    defaultEventYear — optional; which prefix to treat as default for "Archive" label
+*/}}
+{{- $ctx := .context -}}
+{{- $years := site.Params.eventYears | default slice -}}
+{{- if eq (len $years) 0 -}}
+  {{- $years = slice "2025" -}}
+{{- end -}}
+{{- $currentPrefix := "" -}}
+{{- $currentSection := "" -}}
+{{- if $ctx -}}
+  {{- with $ctx.Params.pretalx_prefix -}}
+    {{- $currentPrefix = . -}}
+  {{- end -}}
+  {{- if not $currentPrefix -}}
+    {{- $pathParts := split $ctx.File.Path "/" -}}
+    {{- if ge (len $pathParts) 2 -}}
+      {{- $currentPrefix = index $pathParts 0 -}}
+    {{- end -}}
+  {{- end -}}
+  {{- if ge (len (split $ctx.File.Path "/")) 2 -}}
+    {{- $currentSection = index (split $ctx.File.Path "/") 1 -}}
+  {{- end -}}
+{{- end -}}
+{{- if not $currentSection -}}
+  {{- $currentSection = "talks" -}}
+{{- end -}}
+<nav class="pretalx-event-year-selector" aria-label="Event year">
+  <span class="pretalx-event-year-selector__label">Event:</span>
+  <div class="pretalx-event-year-selector__years">
+    {{- range $years -}}
+      {{- $year := . -}}
+      {{- $isCurrent := eq $year $currentPrefix -}}
+      {{- $talksURL := printf "/%s/talks/" $year | relLangURL -}}
+      {{- $label := $year -}}
+      {{- if eq $year "legacy" -}}
+        {{- $label = "Archive" -}}
+      {{- end -}}
+      {{- if $isCurrent -}}
+        <span class="pretalx-event-year-selector__year is-current">{{ $label }}</span>
+      {{- else -}}
+        <a href="{{ $talksURL }}" class="pretalx-event-year-selector__year">{{ $label }}</a>
+      {{- end -}}
+    {{- end -}}
+  </div>
+  {{- if $currentPrefix -}}
+  <span class="pretalx-event-year-selector__sep" aria-hidden="true">|</span>
+  <span class="pretalx-event-year-selector__sections">
+    <a href="{{ printf "/%s/talks/" $currentPrefix | relLangURL }}" class="pretalx-event-year-selector__link{{ if eq $currentSection "talks" }} is-active{{ end }}">Talks</a>
+    <span aria-hidden="true">·</span>
+    <a href="{{ printf "/%s/speakers/" $currentPrefix | relLangURL }}" class="pretalx-event-year-selector__link{{ if eq $currentSection "speakers" }} is-active{{ end }}">Speakers</a>
+    <span aria-hidden="true">·</span>
+    <a href="{{ printf "/%s/schedule/" $currentPrefix | relLangURL }}" class="pretalx-event-year-selector__link{{ if eq $currentSection "schedule" }} is-active{{ end }}">Schedule</a>
+  </span>
+  {{- end -}}
+</nav>

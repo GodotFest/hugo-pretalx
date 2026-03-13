@@ -38,8 +38,15 @@
   {{- end -}}
 {{- end -}}
 
-<article class="pretalx-talk-card" {{ with $talk.slot }}data-room="{{ .room }}" data-start="{{ .start }}"{{ end }}>
+<article class="pretalx-talk-card" {{ with $talk.code }}data-pretalx-fav-id="{{ . }}"{{ end }} {{ with $talk.slot }}data-room="{{ .room }}" data-start="{{ .start }}"{{ end }}>
   <div class="pretalx-talk-card__body">
+    {{/* Favorite toggle (schedule/talks list); hidden by default, shown when favorites.js is present */}}
+    {{- if $talk.code -}}
+    <button type="button" class="pretalx-fav-toggle" data-fav-id="{{ $talk.code }}" aria-label="Add to favorites" aria-pressed="false" title="Add to favorites">
+      <span class="pretalx-fav-icon pretalx-fav-icon--outline" aria-hidden="true">☆</span>
+      <span class="pretalx-fav-icon pretalx-fav-icon--filled" aria-hidden="true">★</span>
+    </button>
+    {{- end -}}
     {{/* Title */}}
     <h3 class="pretalx-talk-card__title">
       {{- if $href -}}

@@ -1,9 +1,20 @@
 {{ define "main" }}
 {{- $prefix := .Params.pretalx_prefix -}}
 {{- $allTalks := index site.Data.pretalx $prefix "talks" | default slice -}}
+{{- $specialRooms := site.Params.pretalxSpecialRooms | default slice -}}
+
+{{ if site.Params.eventYears }}
+{{ partial "pretalx/event-year-selector.html" (dict "context" .) }}
+{{ end }}
 
 <header class="pretalx-schedule__header">
   <h1 class="pretalx-schedule__title">{{ .Title }}</h1>
+  <div class="pretalx-schedule__actions">
+    <span id="pretalx-favorites-only-toggle" class="pretalx-schedule__favorites-toggle" style="display: none;">
+      <button type="button" id="pretalx-favorites-only" class="pretalx-schedule__action-btn" aria-pressed="false" aria-label="Show only favorite talks">Favorites only</button>
+    </span>
+    <button type="button" id="pretalx-download-ics" class="pretalx-schedule__action-btn" aria-label="Download schedule as ICS calendar file">Download ICS</button>
+  </div>
 </header>
 
 {{ with .Content }}
@@ -14,20 +25,46 @@
 
 {{ partial "pretalx/schedule-timeline.html" (dict "talks" $allTalks "prefix" $prefix) }}
 
-{{/* Inject schedule data as JSON for client-side interactivity */}}
-<script id="pretalx-schedule-data" type="application/json">
-  {{- $scheduled := slice -}}
-  {{- range $allTalks -}}
-    {{- if .slot -}}
-      {{- $scheduled = $scheduled | append . -}}
+{{/* Build sessions (talks) and specials for ICS and other client scripts */}}
+{{- $sessions := slice -}}
+{{- $specials := slice -}}
+{{- range $allTalks -}}
+  {{- if not .slot -}}{{ continue }}{{ end -}}
+  {{- $room := "" -}}
+  {{- with .slot.room -}}
+    {{- if reflect.IsMap . -}}
+      {{- $room = partial "pretalx/helpers.html" (dict "func" "localized" "value" . "lang" "en") -}}
+    {{- else -}}
+      {{- $room = . -}}
     {{- end -}}
   {{- end -}}
-  {{- $scheduled | jsonify | safeHTML -}}
+  {{- $slug := partial "pretalx/helpers.html" (dict "func" "slugify" "value" .title) -}}
+  {{- $item := dict "start" .slot.start "end" .slot.end "title" .title "duration" .duration "room" $room "slug" $slug "code" .code -}}
+  {{- if in $specialRooms $room -}}
+    {{- $specials = $specials | append (dict "start" .slot.start "title" .title "duration" .duration "room" $room) -}}
+  {{- else -}}
+    {{- $sessions = $sessions | append $item -}}
+  {{- end -}}
+{{- end -}}
+
+{{/* Inject schedule data as JSON for ICS and client-side interactivity */}}
+<script id="pretalx-schedule-data" type="application/json">
+  {{- dict "baseURL" .Site.BaseURL "prefix" $prefix "sessions" $sessions "specials" $specials | jsonify | safeHTML -}}
 </script>
 
 {{ $scheduleJS := resources.Get "js/pretalx/schedule.js" }}
 {{ if $scheduleJS }}
   {{ $scheduleJS = $scheduleJS | resources.Minify | resources.Fingerprint }}
   <script type="text/javascript" src="{{ $scheduleJS.RelPermalink }}" integrity="{{ $scheduleJS.Data.Integrity }}" defer></script>
+{{ end }}
+{{ $icsJS := resources.Get "js/pretalx/schedule-ics.js" }}
+{{ if $icsJS }}
+  {{ $icsJS = $icsJS | resources.Minify | resources.Fingerprint }}
+  <script type="text/javascript" src="{{ $icsJS.RelPermalink }}" integrity="{{ $icsJS.Data.Integrity }}" defer></script>
+{{ end }}
+{{ $favJS := resources.Get "js/pretalx/favorites.js" }}
+{{ if $favJS }}
+  {{ $favJS = $favJS | resources.Minify | resources.Fingerprint }}
+  <script type="text/javascript" src="{{ $favJS.RelPermalink }}" integrity="{{ $favJS.Data.Integrity }}" defer></script>
 {{ end }}
 {{ end }}

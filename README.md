@@ -147,6 +147,8 @@ hugo-pretalx fetch
 | Param | Default | Description |
 |-------|---------|-------------|
 | `pretalxRecordingField` | `"recording"` | Front matter / data key used for the talk recording URL. When set on a talk (in data or page params), the talk single page shows a YouTube embed or "Watch recording" link, and talk cards (including schedule) show a "Recording available" badge. |
+| `pretalxSpecialRooms` | *(none)* | Slice of room names that are treated as "special" events (e.g. registration, breaks, lunch). Talks scheduled in these rooms appear in the schedule timeline as special slots (title, room, duration) instead of full talk cards. |
+| `eventYears` | *(none)* | Slice of event prefixes (e.g. `["2025", "2024"]`) for the event-year selector. When set, schedule, talks, and speakers pages show a switcher with links to each prefix’s talks/speakers/schedule. Use `"legacy"` as a prefix and it is displayed as "Archive". |
 
 ### Environment Variables
 
@@ -194,7 +196,9 @@ The module provides these layouts (set via `layout` in front matter):
 | `pretalx-talks` | Talks list page | Lists all talks with cards |
 | `pretalx-speaker` | Individual speaker pages | Shows name, bio, avatar, and their talks |
 | `pretalx-speakers` | Speakers grid page | Grid of all speaker cards |
-| `pretalx-schedule` | Schedule page | Timeline grouped by day/time with room filters |
+| `pretalx-schedule` | Schedule page | Timeline grouped by day/time with room filters; special-room slots (see `pretalxSpecialRooms`); Download ICS button; Favorites toggle when any talk is favorited |
+
+The schedule page includes **ICS export** (button in header), **favorites** (star on each talk card; "Favorites only" filter when at least one talk is favorited), and **day/room filtering**. The talks list supports **infinite scroll** (first batch visible, more load on scroll) and the same **favorites** toggle. Favorites are stored in `localStorage` and namespaced by prefix when `#pretalx-schedule-data` is present.
 
 All layouts use `{{ define "main" }}` and require a `baseof.html` from your theme.
 

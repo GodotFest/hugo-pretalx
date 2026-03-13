@@ -110,11 +110,68 @@
   gap: 1rem;
 }
 
+.pretalx-talks__item--more,
+.pretalx-talks__item.is-hidden {
+  display: none;
+}
+
+.pretalx-talks__sentinel {
+  height: 1px;
+  width: 100%;
+  pointer-events: none;
+  visibility: hidden;
+}
+
+.pretalx-talks__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.pretalx-talks__actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
 /* ── Talk Card ───────────────────────────────────────────────── */
 .pretalx-talk-card {
+  position: relative;
   padding: 1.25rem;
   border-radius: 0.5rem;
   border: 1px solid #e5e7eb;
+}
+
+.pretalx-fav-toggle {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  padding: 0.25rem;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 1.25rem;
+  line-height: 1;
+  color: #9ca3af;
+}
+
+.pretalx-fav-toggle:hover {
+  color: #6b7280;
+}
+
+.pretalx-fav-toggle .pretalx-fav-icon--filled {
+  display: none;
+}
+
+.pretalx-fav-toggle.is-active .pretalx-fav-icon--outline {
+  display: none;
+}
+
+.pretalx-fav-toggle.is-active .pretalx-fav-icon--filled {
+  display: inline;
+  color: #f59e0b;
 }
 
 .pretalx-talk-card__link {
@@ -293,6 +350,10 @@
   margin-bottom: 1rem;
 }
 
+.pretalx-schedule__slot[hidden] {
+  display: none;
+}
+
 .pretalx-schedule__time {
   flex-shrink: 0;
   width: 4rem;
@@ -308,8 +369,117 @@
   gap: 0.75rem;
 }
 
-.pretalx-schedule__entry[hidden] {
+.pretalx-schedule__entry[hidden],
+.pretalx-schedule__entry.is-hidden {
   display: none;
+}
+
+.pretalx-schedule__special {
+  padding: 1rem 1.25rem;
+  border-radius: 0.5rem;
+  border: 1px solid #e5e7eb;
+  background: #f9fafb;
+}
+
+.pretalx-schedule__special-title {
+  font-weight: 600;
+  font-size: 1rem;
+  margin: 0;
+}
+
+.pretalx-schedule__special-meta {
+  margin-top: 0.25rem;
+  font-size: 0.85rem;
+  opacity: 0.7;
+}
+
+.pretalx-schedule__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.pretalx-schedule__actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.pretalx-schedule__action-btn {
+  padding: 0.5rem 1rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.375rem;
+  background: transparent;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.pretalx-schedule__action-btn:hover {
+  background: #f3f4f6;
+}
+
+/* ── Event year selector ────────────────────────────────────── */
+.pretalx-event-year-selector {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+}
+
+.pretalx-event-year-selector__label {
+  font-weight: 500;
+  opacity: 0.8;
+}
+
+.pretalx-event-year-selector__years {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.pretalx-event-year-selector__year {
+  padding: 0.25rem 0.5rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.25rem;
+  text-decoration: none;
+  color: inherit;
+}
+
+.pretalx-event-year-selector__year:hover {
+  background: #f3f4f6;
+}
+
+.pretalx-event-year-selector__year.is-current {
+  font-weight: 600;
+  border-color: currentColor;
+  background: #f3f4f6;
+}
+
+.pretalx-event-year-selector__sep {
+  opacity: 0.5;
+}
+
+.pretalx-event-year-selector__sections {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.pretalx-event-year-selector__link {
+  text-decoration: none;
+  color: inherit;
+}
+
+.pretalx-event-year-selector__link:hover {
+  text-decoration: underline;
+}
+
+.pretalx-event-year-selector__link.is-active {
+  font-weight: 600;
 }
 
 /* ── Responsive ──────────────────────────────────────────────── */

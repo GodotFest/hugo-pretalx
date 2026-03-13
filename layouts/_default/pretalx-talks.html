@@ -1,9 +1,19 @@
 {{ define "main" }}
 {{- $prefix := .Params.pretalx_prefix -}}
 {{- $allTalks := index site.Data.pretalx $prefix "talks" | default slice -}}
+{{- $pageSize := 15 -}}
+
+{{ if site.Params.eventYears }}
+{{ partial "pretalx/event-year-selector.html" (dict "context" .) }}
+{{ end }}
 
 <header class="pretalx-talks__header">
   <h1 class="pretalx-talks__title">{{ .Title }}</h1>
+  <div class="pretalx-talks__actions">
+    <span id="pretalx-favorites-only-toggle" class="pretalx-talks__favorites-toggle" style="display: none;">
+      <button type="button" id="pretalx-favorites-only" class="pretalx-schedule__action-btn" aria-pressed="false" aria-label="Show only favorite talks">Favorites only</button>
+    </span>
+  </div>
 </header>
 
 {{ with .Content }}
@@ -17,10 +27,25 @@
 {{- if eq (len $allTalks) 0 -}}
   <p class="pretalx-talks__empty">No talks available yet.</p>
 {{- else -}}
-<section class="pretalx-talks__list">
-  {{- range $allTalks -}}
-    {{ partial "pretalx/talk-card.html" (dict "talk" . "prefix" $prefix "linked" true "talksSection" $talksSection "speakersSection" $speakersSection) }}
+<section class="pretalx-talks__list" id="pretalx-talks-list" data-pretalx-initial="{{ $pageSize }}">
+  {{- range $i, $talk := $allTalks -}}
+  <div class="pretalx-talks__item{{ if ge $i $pageSize }} pretalx-talks__item--more{{ end }}">
+    {{ partial "pretalx/talk-card.html" (dict "talk" $talk "prefix" $prefix "linked" true "talksSection" $talksSection "speakersSection" $speakersSection) }}
+  </div>
   {{- end -}}
 </section>
+<div id="pretalx-talks-sentinel" class="pretalx-talks__sentinel" aria-hidden="true"></div>
+{{ $infiniteJS := resources.Get "js/pretalx/infinite-talks.js" }}
+{{ if $infiniteJS }}
+  {{ $infiniteJS = $infiniteJS | resources.Minify | resources.Fingerprint }}
+  <script type="text/javascript" src="{{ $infiniteJS.RelPermalink }}" integrity="{{ $infiniteJS.Data.Integrity }}" defer></script>
+{{ end }}
+{{/* Favorites: needs schedule data for prefix; inject minimal data so favorites.js can namespace storage */}}
+<script id="pretalx-schedule-data" type="application/json">{{ dict "prefix" $prefix | jsonify | safeHTML }}</script>
+{{ $favJS := resources.Get "js/pretalx/favorites.js" }}
+{{ if $favJS }}
+  {{ $favJS = $favJS | resources.Minify | resources.Fingerprint }}
+  <script type="text/javascript" src="{{ $favJS.RelPermalink }}" integrity="{{ $favJS.Data.Integrity }}" defer></script>
+{{ end }}
 {{- end -}}
 {{ end }}
