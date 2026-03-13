@@ -99,6 +99,14 @@ go install github.com/GodotFest/hugo-pretalx@latest
 hugo-pretalx fetch
 ```
 
+## Using the module from a private repository
+
+*Optional.* Only needed when the hugo-pretalx repo is **private** and you use it from another repo (e.g. same GitHub org).
+
+- **When this applies:** The module at e.g. `github.com/yourorg/hugo-pretalx` is private; Go and Hugo need to fetch it via Git, which requires authentication.
+- **Local:** Use SSH or HTTPS with a credential helper so `git clone` of the module works. For HTTPS, set `GOPRIVATE=github.com/yourorg/*` and use a [Personal Access Token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token) (or fine-grained token) with read access to the module repo so `hugo mod get` can authenticate.
+- **CI (GitHub Actions):** The default `GITHUB_TOKEN` only has access to the repo running the workflow, so it cannot fetch another private repo. Use a PAT (or fine-grained token) with read access to the org/repos that contain the module, store it as a secret (e.g. `MODULE_ACCESS_TOKEN`), then set `GOPRIVATE=github.com/yourorg/*` and configure Git to use the token for GitHub before running `hugo mod get` or `hugo`. See [docs/example-ci-private-module.yml](docs/example-ci-private-module.yml) for a full GitHub Actions example.
+
 ## Configuration
 
 ### `pretalx.json`
@@ -134,6 +142,12 @@ hugo-pretalx fetch
 | `events[].speaker_layout` | Override layout for speaker pages (default: `pretalx-speaker`) |
 | `events[].talk_layout` | Override layout for talk pages (default: `pretalx-talk`) |
 
+### Site parameters (hugo.toml or params.toml)
+
+| Param | Default | Description |
+|-------|---------|-------------|
+| `pretalxRecordingField` | `"recording"` | Front matter / data key used for the talk recording URL. When set on a talk (in data or page params), the talk single page shows a YouTube embed or "Watch recording" link, and talk cards (including schedule) show a "Recording available" badge. |
+
 ### Environment Variables
 
 | Variable | Description |
@@ -168,13 +182,15 @@ your-site/
         └── ...
 ```
 
+**Slugs:** Talk and speaker directory names are derived from title/name; if two items slugify to the same value, the CLI appends `-<code>` so each page has a unique URL.
+
 ## Layouts
 
 The module provides these layouts (set via `layout` in front matter):
 
 | Layout | Used for | Description |
 |--------|----------|-------------|
-| `pretalx-talk` | Individual talk pages | Shows title, speakers, abstract, metadata |
+| `pretalx-talk` | Individual talk pages | Shows title, speaker cards (with links in new tab), optional recording embed (see `pretalxRecordingField`), abstract, metadata |
 | `pretalx-talks` | Talks list page | Lists all talks with cards |
 | `pretalx-speaker` | Individual speaker pages | Shows name, bio, avatar, and their talks |
 | `pretalx-speakers` | Speakers grid page | Grid of all speaker cards |
@@ -224,8 +240,11 @@ The module outputs semantic HTML with BEM-style CSS classes. No visual styles ar
 .pretalx-talks__list            — Talks list container
 .pretalx-talk-card              — Individual talk card
 .pretalx-talk-card__title       — Talk title
+.pretalx-talk-card__recording-badge — "Recording available" when recording URL is set
 .pretalx-talk-card__meta        — Metadata row (type, duration, room)
-.pretalx-talk-card__speakers    — Speakers in a talk card
+.pretalx-talk-card__speakers    — Speakers in a talk card (links open in new tab)
+.pretalx-speaker-link           — Speaker link (e.g. in talk cards)
+.pretalx-talk__recording        — Recording section on talk single page (embed or link)
 
 .pretalx-schedule               — Schedule container
 .pretalx-schedule__tabs         — Day tab navigation
@@ -309,6 +328,8 @@ speaker.submissions[]   — Array of talk codes
 ```
 
 ## CI/CD Integration
+
+If your site repo and hugo-pretalx are both private (e.g. same org), see [Using the module from a private repository](#using-the-module-from-a-private-repository) for token setup.
 
 ```yaml
 # GitHub Actions example

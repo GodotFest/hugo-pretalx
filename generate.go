@@ -135,8 +135,9 @@ func generateContent(outputDir string, event EventConfig, talks, speakers []inte
 		}
 	}
 
-	// Generate individual talk pages
+	// Generate individual talk pages (unique slugs: base from title, append -code on collision)
 	talkCount := 0
+	usedTalkSlugs := make(map[string]bool)
 	for _, item := range talks {
 		m, ok := item.(map[string]interface{})
 		if !ok {
@@ -147,10 +148,15 @@ func generateContent(outputDir string, event EventConfig, talks, speakers []inte
 		if title == "" || code == "" {
 			continue
 		}
-		slug := slugify(title)
-		if slug == "" {
-			slug = strings.ToLower(code)
+		baseSlug := slugify(title)
+		if baseSlug == "" {
+			baseSlug = strings.ToLower(code)
 		}
+		slug := baseSlug
+		if usedTalkSlugs[slug] {
+			slug = baseSlug + "-" + strings.ToLower(code)
+		}
+		usedTalkSlugs[slug] = true
 		path := filepath.Join(outputDir, "content", prefix, "talks", slug, "index.md")
 		tags := append(append([]string{}, event.Tags...), "talk")
 		if err := writeContentPage(path, title, talkLayout, code, prefix, tags, dryRun, force); err != nil {

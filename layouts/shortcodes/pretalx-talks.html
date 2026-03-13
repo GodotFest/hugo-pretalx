@@ -60,12 +60,14 @@
   {{- end -}}
 {{- end -}}
 
+{{- $talksSection := site.GetPage (printf "/%s/talks" $prefix) -}}
+{{- $speakersSection := site.GetPage (printf "/%s/speakers" $prefix) -}}
 {{- if eq (len $filtered) 0 -}}
   <p class="pretalx-talks__empty">No talks match the given criteria.</p>
 {{- else -}}
 <div class="pretalx-talks__list">
   {{- range $filtered -}}
-    {{ partial "pretalx/talk-card.html" (dict "talk" . "prefix" $prefix "linked" true) }}
+    {{ partial "pretalx/talk-card.html" (dict "talk" . "prefix" $prefix "linked" true "talksSection" $talksSection "speakersSection" $speakersSection) }}
   {{- end -}}
 </div>
 {{- end -}}

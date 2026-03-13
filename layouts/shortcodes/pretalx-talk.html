@@ -16,8 +16,10 @@
   {{- end -}}
 {{- end -}}
 
+{{- $talksSection := site.GetPage (printf "/%s/talks" $prefix) -}}
+{{- $speakersSection := site.GetPage (printf "/%s/speakers" $prefix) -}}
 {{- if $talk.title -}}
-  {{ partial "pretalx/talk-card.html" (dict "talk" $talk "prefix" $prefix "linked" true) }}
+  {{ partial "pretalx/talk-card.html" (dict "talk" $talk "prefix" $prefix "linked" true "talksSection" $talksSection "speakersSection" $speakersSection) }}
 {{- else -}}
   <p class="pretalx-error">Talk with code "{{ $code }}" not found in {{ $prefix }} data.</p>
 {{- end -}}

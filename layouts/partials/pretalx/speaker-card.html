@@ -5,22 +5,38 @@
     .speaker — A speaker object (from Pretalx talks[].speakers or speakers endpoint)
     .prefix  — The event prefix (e.g. "2025") for linking
     .linked  — If true, wrap in a link to the speaker's page (default: false)
+    .section — Optional; when set with linked, resolve href by pretalx_code so slug is correct after dedup
 */}}
 {{- $speaker := .speaker -}}
 {{- $prefix := .prefix | default "" -}}
 {{- $linked := .linked | default false -}}
-{{- $name := $speaker.name | default "Unknown Speaker" -}}
-{{- $slug := ($name | urlize) | replace "/" "-" -}}
+{{- $section := .section -}}
+{{- $name := index $speaker "name" | default "Unknown Speaker" -}}
+{{- $code := index $speaker "code" -}}
 {{- $href := "" -}}
 {{- if and $linked $prefix -}}
-  {{- $href = printf "/%s/speakers/%s/" $prefix $slug -}}
+  {{- if and $section $code -}}
+    {{- range $section.Pages -}}
+      {{- if eq .Params.pretalx_code $code -}}
+        {{- $href = .RelPermalink -}}
+        {{- break -}}
+      {{- end -}}
+    {{- end -}}
+  {{- end -}}
+  {{- if not $href -}}
+    {{- $slug := ($name | urlize) | replace "/" "-" -}}
+    {{- if not $slug -}}
+      {{- $slug = $code | lower -}}
+    {{- end -}}
+    {{- $href = printf "/%s/speakers/%s/" $prefix $slug -}}
+  {{- end -}}
 {{- end -}}
 
 <div class="pretalx-speaker-card">
-  {{- if $href }}<a href="{{ $href }}" class="pretalx-speaker-card__link">{{ end -}}
+  {{- if $href }}<a href="{{ $href }}" class="pretalx-speaker-card__link" target="_blank" rel="noopener noreferrer">{{ end -}}
 
   <div class="pretalx-speaker-card__avatar">
-    {{- with $speaker.avatar -}}
+    {{- with index $speaker "avatar" -}}
       <img src="{{ . }}" alt="{{ $name }}" loading="lazy" decoding="async" class="pretalx-speaker-card__img">
     {{- else -}}
       <div class="pretalx-speaker-card__placeholder" aria-hidden="true">
@@ -31,7 +47,7 @@
 
   <div class="pretalx-speaker-card__info">
     <h3 class="pretalx-speaker-card__name">{{ $name }}</h3>
-    {{- with $speaker.biography -}}
+    {{- with index $speaker "biography" -}}
       <p class="pretalx-speaker-card__bio">{{ . | plainify | truncate 120 }}</p>
     {{- end -}}
   </div>

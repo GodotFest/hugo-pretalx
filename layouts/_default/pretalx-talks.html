@@ -12,12 +12,14 @@
 </div>
 {{ end }}
 
+{{- $talksSection := .Site.GetPage (printf "/%s/talks" $prefix) -}}
+{{- $speakersSection := .Site.GetPage (printf "/%s/speakers" $prefix) -}}
 {{- if eq (len $allTalks) 0 -}}
   <p class="pretalx-talks__empty">No talks available yet.</p>
 {{- else -}}
 <section class="pretalx-talks__list">
   {{- range $allTalks -}}
-    {{ partial "pretalx/talk-card.html" (dict "talk" . "prefix" $prefix "linked" true) }}
+    {{ partial "pretalx/talk-card.html" (dict "talk" . "prefix" $prefix "linked" true "talksSection" $talksSection "speakersSection" $speakersSection) }}
   {{- end -}}
 </section>
 {{- end -}}

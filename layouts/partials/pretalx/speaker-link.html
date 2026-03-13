@@ -1,0 +1,40 @@
+{{/*
+  pretalx/speaker-link.html — Link to a speaker page (e.g. in talk cards). Opens in new tab.
+
+  Params:
+    .speaker     — Speaker object (code, name, avatar)
+    .prefix      — Event prefix (e.g. "2025")
+    .section     — Optional; speakers section to resolve href by pretalx_code
+    .showAvatar  — If true, show avatar before name (default: false)
+*/}}
+{{- $speaker := .speaker -}}
+{{- $prefix := .prefix | default "" -}}
+{{- $section := .section -}}
+{{- $showAvatar := .showAvatar | default false -}}
+{{- $name := index $speaker "name" | default "Unknown Speaker" -}}
+{{- $code := index $speaker "code" -}}
+{{- $href := "" -}}
+{{- if and $section $code -}}
+  {{- range $section.Pages -}}
+    {{- if eq .Params.pretalx_code $code -}}
+      {{- $href = .RelPermalink -}}
+      {{- break -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+{{- if not $href -}}
+  {{- $slug := ($name | urlize) | replace "/" "-" -}}
+  {{- if not $slug -}}
+    {{- $slug = $code | lower -}}
+  {{- end -}}
+  {{- $href = printf "/%s/speakers/%s/" $prefix $slug -}}
+{{- end -}}
+
+<a href="{{ $href }}" class="pretalx-speaker-link" target="_blank" rel="noopener noreferrer">
+  {{- if $showAvatar -}}
+    {{- with index $speaker "avatar" -}}
+      <img src="{{ . }}" alt="{{ $name }}" class="pretalx-talk-card__speaker-avatar" loading="lazy" decoding="async">
+    {{- end -}}
+  {{- end -}}
+  <span class="pretalx-talk-card__speaker-name">{{ $name }}</span>
+</a>

@@ -8,3 +8,11 @@ languageCode = "en"
 
 [taxonomies]
   tag = "tags"
+
+# Optional: field name for talk recording URL (default "recording").
+# When set on a talk (data or front matter), single page shows embed and cards show "Recording available".
+[params]
+  pretalxRecordingField = "recording"
+  # For speaker page "talks grouped by year"; list event prefixes to show (newest first).
+  eventYears = ["2025"]
+  defaultEventYear = "2025"

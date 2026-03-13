@@ -18,6 +18,7 @@
     "duration": 30,
     "do_not_record": false,
     "content_locale": "en",
+    "recording": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
     "slot": {
       "start": "2025-11-11T10:00:00+01:00",
       "end": "2025-11-11T10:30:00+01:00",

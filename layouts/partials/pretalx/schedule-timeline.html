@@ -7,6 +7,8 @@
 */}}
 {{- $talks := .talks | default slice -}}
 {{- $prefix := .prefix | default "" -}}
+{{- $talksSection := site.GetPage (printf "/%s/talks" $prefix) -}}
+{{- $speakersSection := site.GetPage (printf "/%s/speakers" $prefix) -}}
 
 {{/* Filter to only scheduled talks (those with a slot) */}}
 {{- $scheduled := slice -}}
@@ -111,7 +113,7 @@
         {{- end -}}
 
         <div class="pretalx-schedule__entry" data-room="{{ $room }}">
-          {{ partial "pretalx/talk-card.html" (dict "talk" . "prefix" $prefix "linked" true) }}
+          {{ partial "pretalx/talk-card.html" (dict "talk" . "prefix" $prefix "linked" true "talksSection" $talksSection "speakersSection" $speakersSection) }}
         </div>
       {{- end -}}
 

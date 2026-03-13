@@ -1,0 +1,46 @@
+# Example GitHub Actions workflow for a site that uses hugo-pretalx as a
+# private module (same org or another private repo). Copy this into your
+# site repo as .github/workflows/build.yml and adapt:
+#   - Replace yourorg with your GitHub org (or user).
+#   - Ensure MODULE_ACCESS_TOKEN and PRETALX_TOKEN are set in repo secrets.
+
+name: Build site
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+
+      - name: Configure Git for private module
+        env:
+          GOPRIVATE: "github.com/yourorg/*"
+          MODULE_ACCESS_TOKEN: ${{ secrets.MODULE_ACCESS_TOKEN }}
+        run: |
+          git config --global url."https://${MODULE_ACCESS_TOKEN}@github.com/".insteadOf "https://github.com/"
+
+      - uses: peaceiris/actions-hugo@v3
+        with:
+          hugo-version: "0.139.0"
+          extended: true
+
+      - name: Get Hugo modules
+        run: hugo mod get
+
+      - name: Fetch Pretalx data
+        run: go run github.com/yourorg/hugo-pretalx@latest fetch
+        env:
+          PRETALX_TOKEN: ${{ secrets.PRETALX_TOKEN }}
+
+      - name: Build site
+        run: hugo --minify

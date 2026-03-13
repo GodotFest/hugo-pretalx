@@ -20,11 +20,43 @@
     {{- end -}}
   </header>
 
-  {{/* Speakers */}}
+  {{/* Speakers (card on top; links open in new tab) */}}
   {{- with $talk.speakers -}}
+  {{- $speakersSection := $.Site.GetPage (printf "/%s/speakers" $prefix) -}}
   <section class="pretalx-talk__speakers">
     {{- range . -}}
-      {{ partial "pretalx/speaker-card.html" (dict "speaker" . "prefix" $prefix "linked" true) }}
+      {{ partial "pretalx/speaker-card.html" (dict "speaker" . "prefix" $prefix "linked" true "section" $speakersSection) }}
+    {{- end -}}
+  </section>
+  {{- end -}}
+
+  {{/* Recording (YouTube embed or link; field name from params.pretalxRecordingField) */}}
+  {{- $recField := site.Params.pretalxRecordingField | default "recording" -}}
+  {{- $recURL := "" -}}
+  {{- with $talk -}}
+    {{- $recURL = index . $recField -}}
+  {{- end -}}
+  {{- if not $recURL -}}
+    {{- $recURL = index $.Params $recField -}}
+  {{- end -}}
+  {{- if $recURL -}}
+  <section class="pretalx-talk__recording">
+    <h2 class="pretalx-talk__recording-title">Recording</h2>
+    {{- if or (in $recURL "youtube.com") (in $recURL "youtu.be") -}}
+      {{- $embedURL := $recURL -}}
+      {{- if in $recURL "youtube.com/watch" -}}
+        {{- $embedURL = replace $recURL "watch?v=" "embed/" -}}
+      {{- else if in $recURL "youtu.be/" -}}
+        {{- $embedURL = printf "https://www.youtube.com/embed/%s" (replace $recURL "https://youtu.be/" "") -}}
+      {{- else if in $recURL "youtube.com/embed/" -}}
+        {{- $embedURL = $recURL -}}
+      {{- end -}}
+    <div class="pretalx-talk__recording-embed">
+      <iframe src="{{ $embedURL }}" title="Talk recording" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+    </div>
+    <p class="pretalx-talk__recording-link"><a href="{{ $recURL }}" target="_blank" rel="noopener noreferrer">Watch on YouTube</a></p>
+    {{- else -}}
+    <p><a href="{{ $recURL }}" target="_blank" rel="noopener noreferrer">Watch recording</a></p>
     {{- end -}}
   </section>
   {{- end -}}

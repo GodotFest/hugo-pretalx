@@ -6,12 +6,13 @@
 
 {{- $allSpeakers := index site.Data.pretalx $prefix "speakers" | default slice -}}
 
+{{- $speakersSection := site.GetPage (printf "/%s/speakers" $prefix) -}}
 {{- if eq (len $allSpeakers) 0 -}}
   <p class="pretalx-speakers__empty">No speakers announced yet.</p>
 {{- else -}}
 <div class="pretalx-speakers__grid">
   {{- range $allSpeakers -}}
-    {{ partial "pretalx/speaker-card.html" (dict "speaker" . "prefix" $prefix "linked" true) }}
+    {{ partial "pretalx/speaker-card.html" (dict "speaker" . "prefix" $prefix "linked" true "section" $speakersSection) }}
   {{- end -}}
 </div>
 {{- end -}}

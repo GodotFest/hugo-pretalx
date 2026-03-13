@@ -2,18 +2,40 @@
   pretalx/talk-card.html — Renders a single talk card for listings.
 
   Params:
-    .talk    — A talk object from the Pretalx API
-    .prefix  — The event prefix (e.g. "2025") for linking
-    .linked  — If true, wrap title in a link to the talk page (default: false)
+    .talk         — A talk object from the Pretalx API
+    .prefix       — The event prefix (e.g. "2025") for linking
+    .linked       — If true, wrap title in a link to the talk page (default: false)
+    .talksSection — Optional; when set, resolve talk href by pretalx_code for correct slug
+    .speakersSection — Optional; when set, speaker links resolve by code (for speaker-link)
 */}}
 {{- $talk := .talk -}}
 {{- $prefix := .prefix | default "" -}}
 {{- $linked := .linked | default false -}}
+{{- $talksSection := .talksSection -}}
+{{- $speakersSection := .speakersSection -}}
 {{- $title := $talk.title | default "Untitled" -}}
-{{- $slug := ($title | urlize) | replace "/" "-" -}}
 {{- $href := "" -}}
 {{- if and $linked $prefix -}}
-  {{- $href = printf "/%s/talks/%s/" $prefix $slug -}}
+  {{- if and $talksSection $talk.code -}}
+    {{- range $talksSection.Pages -}}
+      {{- if eq .Params.pretalx_code $talk.code -}}
+        {{- $href = .RelPermalink -}}
+        {{- break -}}
+      {{- end -}}
+    {{- end -}}
+  {{- end -}}
+  {{- if not $href -}}
+    {{- $slug := ($title | urlize) | replace "/" "-" -}}
+    {{- $href = printf "/%s/talks/%s/" $prefix $slug -}}
+  {{- end -}}
+{{- end -}}
+
+{{- $recField := site.Params.pretalxRecordingField | default "recording" -}}
+{{- $hasRecording := false -}}
+{{- with index $talk $recField -}}
+  {{- if . -}}
+    {{- $hasRecording = true -}}
+  {{- end -}}
 {{- end -}}
 
 <article class="pretalx-talk-card" {{ with $talk.slot }}data-room="{{ .room }}" data-start="{{ .start }}"{{ end }}>
@@ -26,6 +48,11 @@
         {{ $title }}
       {{- end -}}
     </h3>
+
+    {{/* Recording available badge */}}
+    {{- if $hasRecording -}}
+    <span class="pretalx-talk-card__recording-badge" aria-label="Recording available">Recording available</span>
+    {{- end -}}
 
     {{/* Metadata */}}
     <div class="pretalx-talk-card__meta">
@@ -62,15 +89,12 @@
     {{- end -}}
   </div>
 
-  {{/* Speakers */}}
+  {{/* Speakers (link to speaker page, new tab) */}}
   {{- with $talk.speakers -}}
   <div class="pretalx-talk-card__speakers">
     {{- range . -}}
       <div class="pretalx-talk-card__speaker">
-        {{- with .avatar -}}
-          <img src="{{ . }}" alt="{{ $.name }}" class="pretalx-talk-card__speaker-avatar" loading="lazy" decoding="async">
-        {{- end -}}
-        <span class="pretalx-talk-card__speaker-name">{{ .name }}</span>
+        {{ partial "pretalx/speaker-link.html" (dict "speaker" . "prefix" $prefix "section" $speakersSection "showAvatar" true) }}
       </div>
     {{- end -}}
   </div>
