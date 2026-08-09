@@ -66,11 +66,11 @@ jobs:
         run: |
           echo "Checking generated pages..."
           test -f public/index.html
-          test -f public/2025/talks/index.html
-          test -f public/2025/speakers/index.html
-          test -f public/2025/schedule/index.html
-          TALK_COUNT=$(find public/2025/talks -mindepth 1 -maxdepth 1 -type d 2>/dev/null | wc -l)
-          SPEAKER_COUNT=$(find public/2025/speakers -mindepth 1 -maxdepth 1 -type d 2>/dev/null | wc -l)
+          test -f public/talks/index.html
+          test -f public/speakers/index.html
+          test -f public/schedule/index.html
+          TALK_COUNT=$(find public/talks -mindepth 1 -maxdepth 1 -type d 2>/dev/null | wc -l)
+          SPEAKER_COUNT=$(find public/speakers -mindepth 1 -maxdepth 1 -type d 2>/dev/null | wc -l)
           test "$TALK_COUNT" -ge 1 || (echo "Expected at least one talk page, got $TALK_COUNT"; exit 1)
           test "$SPEAKER_COUNT" -ge 1 || (echo "Expected at least one speaker page, got $SPEAKER_COUNT"; exit 1)
           echo "All expected pages exist ($TALK_COUNT talks, $SPEAKER_COUNT speakers)."

@@ -1,15 +1,20 @@
 {{/*
   pretalx/special-card.html — Renders a schedule slot for a "special" event (e.g. registration, break, lunch).
-  Used for talks that are in a configured "special room" (see pretalxSpecialRooms).
-  Params: .title, .room (string), .duration (optional), .slot (optional, for time display)
+  Used for entries in a configured "special room" (see pretalxSpecialRooms).
+
+  Params: .title, .room (string)
+  Site param: pretalxRoomLabels — map of Pretalx room name to display label
 */}}
-<div class="pretalx-schedule__special" data-room="{{ .room | default "" }}">
+{{- $room := .room | default "" -}}
+{{- $roomLabel := $room -}}
+{{- with site.Params.pretalxRoomLabels -}}
+  {{- with index . $room -}}
+    {{- $roomLabel = . -}}
+  {{- end -}}
+{{- end -}}
+<div class="pretalx-schedule__special" data-room="{{ $room }}">
   <div class="pretalx-schedule__special-title">{{ .title }}</div>
-  {{- if or .room .duration -}}
-  <div class="pretalx-schedule__special-meta">
-    {{- if .room -}}<span>{{ .room }}</span>{{- end -}}
-    {{- if and .room .duration -}} · {{- end -}}
-    {{- if .duration -}}<span>{{ .duration }} min</span>{{- end -}}
-  </div>
+  {{- with $roomLabel -}}
+  <div class="pretalx-schedule__special-meta">{{ . }}</div>
   {{- end -}}
 </div>

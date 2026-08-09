@@ -48,6 +48,7 @@ Fetch flags:
   --dry-run        Print what would be done without writing files
   --force          Overwrite existing content files (front matter updated, body preserved)
   --data-only      Only write data files, skip content page generation
+  --prune          Delete generated pages that are no longer in the fetched set
   --event SLUG     Only fetch this specific event (by its Pretalx slug)
 
 Environment variables:

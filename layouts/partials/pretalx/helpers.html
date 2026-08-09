@@ -11,6 +11,13 @@
 
   Format ISO datetime for display:
     {{ partial "pretalx/helpers.html" (dict "func" "formatTime" "value" $talk.slot.start "format" "15:04") }}
+
+  Build a one-line card excerpt from an abstract:
+    {{ partial "pretalx/helpers.html" (dict "func" "excerpt" "value" $talk.abstract "length" 200) }}
+
+  Resolve a locally served, resized and fingerprinted image URL from a page bundle,
+  falling back to a site asset when the page has no image of its own:
+    {{ partial "pretalx/helpers.html" (dict "func" "image" "page" $page "spec" "144x144 webp q80" "method" "fill" "fallback" "img/featured.webp") }}
 */}}
 
 {{- $func := .func -}}
@@ -26,13 +33,58 @@
 
 {{- else if eq $func "slugify" -}}
   {{- $val := .value | default "" -}}
-  {{- ($val | urlize) | replace "/" "-" -}}
+  {{- replace ($val | urlize) "/" "-" -}}
 
 {{- else if eq $func "formatTime" -}}
   {{- $val := .value | default "" -}}
   {{- $fmt := .format | default "15:04" -}}
   {{- if $val -}}
     {{- (time $val).Format $fmt -}}
+  {{- end -}}
+
+{{- else if eq $func "excerpt" -}}
+  {{/* Abstracts are markdown and often continue into code fences or lists, so the
+       excerpt stops at the first blank line rather than truncating mid-block. */}}
+  {{- $val := .value | default "" -}}
+  {{- $length := .length | default 200 -}}
+  {{- $val = replace $val "\r" "" -}}
+  {{- $val = index (split $val "\n\n") 0 -}}
+  {{- $val = $val | markdownify | plainify | htmlUnescape -}}
+  {{- $val = replaceRE `\s+` " " $val -}}
+  {{/* plainify leaves a gap where an inline tag closed, e.g. "Backstitch , enables" */}}
+  {{- $val = replaceRE ` ([,.;:!?])` "$1" $val -}}
+  {{- trim $val " " | truncate $length -}}
+
+{{- else if eq $func "image" -}}
+  {{/* Images are always served from the site itself: hugo-pretalx mirrors them into
+       the page bundle at fetch time so Hugo can resize, convert and fingerprint them.
+       Pretalx URLs are never emitted, so a missing image falls back to a site asset. */}}
+  {{- $page := .page -}}
+  {{- $spec := .spec | default "1200x800 webp q75" -}}
+  {{- $method := .method | default "fit" -}}
+  {{- $res := "" -}}
+  {{- with $page -}}
+    {{- $res = .Resources.GetMatch "*featured*" -}}
+    {{- if not $res -}}
+      {{- $res = .Resources.GetMatch "*feature*" -}}
+    {{- end -}}
+    {{- if not $res -}}
+      {{- $res = .Resources.GetMatch "*.{jpg,jpeg,png,gif,webp,tif,tiff,bmp}" -}}
+    {{- end -}}
+  {{- end -}}
+  {{- if not $res -}}
+    {{- with .fallback -}}
+      {{- $res = resources.Get . -}}
+    {{- end -}}
+  {{- end -}}
+  {{- with $res -}}
+    {{- if or site.Params.disableImageOptimization (eq .MediaType.SubType "svg") -}}
+      {{- .RelPermalink -}}
+    {{- else if eq $method "fill" -}}
+      {{- (.Fill $spec).RelPermalink -}}
+    {{- else -}}
+      {{- (.Fit $spec).RelPermalink -}}
+    {{- end -}}
   {{- end -}}
 
 {{- else -}}

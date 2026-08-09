@@ -6,7 +6,7 @@ CI and local tests use a **mock Pretalx API server** so the CLI and site are gen
 
 - **Fixtures:** `test/fixtures/talks.json` and `test/fixtures/speakers.json` (Pretalx-shaped JSON). Optional fields such as `recording` (YouTube URL) are passed through; the test site uses `params.pretalxRecordingField = "recording"` so one fixture talk has a recording to exercise the embed and "Recording available" badge.
 - **Server:** `test/mock-pretalx-server.js` — Node HTTP server on port 9876 that serves those fixtures at `/api/events/:event/talks/` and `/api/events/:event/speakers/` in paginated format. Accepts any `Authorization: Token` (e.g. `test-token`).
-- **Config:** `test/site/pretalx.json` points at `http://127.0.0.1:9876` and event `test-event` → prefix `2025`. `test/site/hugo.toml` sets `params.pretalxRecordingField`, `eventYears`, and `defaultEventYear` for layout behaviour.
+- **Config:** `test/site/pretalx.json` points at `http://127.0.0.1:9876` and event `test-event` → data prefix `2025`. Content is written flat under `content/talks/`, `content/speakers/`, and `content/schedule/`. `test/site/hugo.toml` sets `params.pretalxRecordingField` for layout behaviour.
 
 ## Run the full test locally
 

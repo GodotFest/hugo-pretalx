@@ -28,12 +28,18 @@ type EventConfig struct {
 	// Event is the Pretalx event slug (used in the API URL).
 	Event string `json:"event"`
 
-	// Prefix is the local directory prefix for generated content and data.
-	// For example, "2025" produces data/pretalx/2025/ and content/2025/.
+	// Prefix is the data directory key and front-matter pretalx_prefix value.
+	// For example, "2025" produces data/pretalx/2025/; content pages are written
+	// flat under content/talks/ and content/speakers/ with tags for year filtering.
 	Prefix string `json:"prefix"`
 
 	// Tags are automatically applied to all generated content pages.
 	Tags []string `json:"tags,omitempty"`
+
+	// States lists the submission states to include (default: ["confirmed"]).
+	// Useful for testing, e.g. ["confirmed", "accepted", "submitted"] to preview
+	// the program before talks are confirmed.
+	States []string `json:"states,omitempty"`
 
 	// SpeakerLayout overrides the default layout for speaker pages (default: "pretalx-speaker").
 	SpeakerLayout string `json:"speaker_layout,omitempty"`

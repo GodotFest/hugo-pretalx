@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"path/filepath"
+	"strings"
 )
 
 // runFetch implements the "fetch" command.
@@ -15,6 +16,7 @@ func runFetch(args []string) error {
 	dryRun := fs.Bool("dry-run", false, "Print actions without writing files")
 	force := fs.Bool("force", false, "Overwrite existing content files")
 	dataOnly := fs.Bool("data-only", false, "Only write data files, skip content pages")
+	prune := fs.Bool("prune", false, "Delete generated pages that are no longer in the fetched set")
 	eventFilter := fs.String("event", "", "Only fetch this event (by slug)")
 
 	if err := fs.Parse(args); err != nil {
@@ -52,21 +54,26 @@ func runFetch(args []string) error {
 
 		fmt.Printf("\n=> Event: %s (prefix: %s)\n", event.Event, event.Prefix)
 
-		// Fetch talks
+		// Fetch talks, filtered to the event's allowed states (default: confirmed)
+		states := event.States
+		if len(states) == 0 {
+			states = []string{"confirmed"}
+		}
 		fmt.Printf("  Fetching talks")
-		talks, err := client.FetchAll(event.Event, "talks")
+		talks, err := client.FetchTalks(talksRequest{Event: event.Event, States: states})
 		if err != nil {
 			return fmt.Errorf("fetching talks for %s: %w", event.Event, err)
 		}
-		fmt.Printf(" %d talks\n", len(talks))
+		fmt.Printf(" %d talks (states: %s)\n", len(talks), strings.Join(states, ", "))
 
-		// Fetch speakers
+		// Fetch speakers, limited to those on included talks
 		fmt.Printf("  Fetching speakers")
-		speakers, err := client.FetchAll(event.Event, "speakers")
+		speakers, err := client.FetchSpeakers(event.Event)
 		if err != nil {
 			return fmt.Errorf("fetching speakers for %s: %w", event.Event, err)
 		}
-		fmt.Printf(" %d speakers\n", len(speakers))
+		speakers = filterSpeakersByTalks(speakers, talks)
+		fmt.Printf(" %d speakers (on included talks)\n", len(speakers))
 
 		// Write data files (always overwritten — they mirror the API)
 		talksPath := filepath.Join(*outputDir, "data", "pretalx", event.Prefix, "talks.json")
@@ -81,7 +88,15 @@ func runFetch(args []string) error {
 
 		// Generate content pages
 		if !*dataOnly {
-			if err := generateContent(*outputDir, event, talks, speakers, *dryRun, *force); err != nil {
+			if err := generateContent(generateRequest{
+				OutputDir: *outputDir,
+				Event:     event,
+				Talks:     talks,
+				Speakers:  speakers,
+				DryRun:    *dryRun,
+				Force:     *force,
+				Prune:     *prune,
+			}); err != nil {
 				return err
 			}
 		}

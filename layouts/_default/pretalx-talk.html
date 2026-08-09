@@ -22,7 +22,7 @@
 
   {{/* Speakers (card on top; links open in new tab) */}}
   {{- with $talk.speakers -}}
-  {{- $speakersSection := $.Site.GetPage (printf "/%s/speakers" $prefix) -}}
+  {{- $speakersSection := $.Site.GetPage "/speakers" -}}
   <section class="pretalx-talk__speakers">
     {{- range . -}}
       {{ partial "pretalx/speaker-card.html" (dict "speaker" . "prefix" $prefix "linked" true "section" $speakersSection) }}

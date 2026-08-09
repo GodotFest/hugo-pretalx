@@ -4,106 +4,241 @@
   Params:
     .talk         — A talk object from the Pretalx API
     .prefix       — The event prefix (e.g. "2025") for linking
-    .linked       — If true, wrap title in a link to the talk page (default: false)
+    .linked       — If true, wrap the whole card in a link to the talk page (default: false)
+    .showDuration — If false, omit the duration chip (default: true). Schedules already
+                    show the duration in the time badge.
     .talksSection — Optional; when set, resolve talk href by pretalx_code for correct slug
     .speakersSection — Optional; when set, speaker links resolve by code (for speaker-link)
+
+  Site params:
+    pretalxRecordingField           — data/page key holding the recording URL or note
+    pretalxRecordingContentMarkers  — substrings that mark an embedded video in page content
 */}}
 {{- $talk := .talk -}}
 {{- $prefix := .prefix | default "" -}}
 {{- $linked := .linked | default false -}}
+{{- $showDuration := true -}}
+{{- if isset . "showDuration" -}}{{- $showDuration = .showDuration -}}{{- end -}}
 {{- $talksSection := .talksSection -}}
 {{- $speakersSection := .speakersSection -}}
 {{- $title := $talk.title | default "Untitled" -}}
-{{- $href := "" -}}
-{{- if and $linked $prefix -}}
-  {{- if and $talksSection $talk.code -}}
-    {{- range $talksSection.Pages -}}
-      {{- if eq .Params.pretalx_code $talk.code -}}
-        {{- $href = .RelPermalink -}}
-        {{- break -}}
-      {{- end -}}
+
+{{- /* Resolve the matching content page once: used for both href and recording */ -}}
+{{- $page := false -}}
+{{- if and $talksSection $talk.code -}}
+  {{- range $talksSection.Pages -}}
+    {{- if and (eq .Params.pretalx_code $talk.code) (or (not $prefix) (eq .Params.pretalx_prefix $prefix)) -}}
+      {{- $page = . -}}
+      {{- break -}}
     {{- end -}}
+  {{- end -}}
+{{- end -}}
+
+{{- $href := "" -}}
+{{- if $linked -}}
+  {{- with $page -}}
+    {{- $href = .RelPermalink -}}
   {{- end -}}
   {{- if not $href -}}
-    {{- $slug := ($title | urlize) | replace "/" "-" -}}
-    {{- $href = printf "/%s/talks/%s/" $prefix $slug -}}
+    {{- $slug := replace ($title | urlize) "/" "-" -}}
+    {{- $href = printf "/talks/%s/" $slug -}}
+    {{- /* Fall back to a slug match so page-derived metadata still resolves */ -}}
+    {{- with site.GetPage (printf "/talks/%s" $slug) -}}
+      {{- $page = . -}}
+    {{- end -}}
   {{- end -}}
 {{- end -}}
 
+{{- /* Recording: Pretalx data field, else page param, else a video embed in the page body */ -}}
 {{- $recField := site.Params.pretalxRecordingField | default "recording" -}}
-{{- $hasRecording := false -}}
+{{- $recValue := "" -}}
 {{- with index $talk $recField -}}
-  {{- if . -}}
-    {{- $hasRecording = true -}}
+  {{- $recValue = printf "%v" . -}}
+{{- end -}}
+{{- if and (not $recValue) $page -}}
+  {{- with index $page.Params $recField -}}
+    {{- $recValue = printf "%v" . -}}
+  {{- end -}}
+{{- end -}}
+{{- $hasVideo := false -}}
+{{- if and $recValue (hasPrefix $recValue "http") -}}
+  {{- $hasVideo = true -}}
+{{- end -}}
+{{- if and (not $hasVideo) $page -}}
+  {{- range site.Params.pretalxRecordingContentMarkers | default slice -}}
+    {{- if in $page.RawContent . -}}
+      {{- $hasVideo = true -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+{{- $recNote := "" -}}
+{{- if and $recValue (not $hasVideo) -}}
+  {{- $recNote = $recValue -}}
+{{- end -}}
+
+{{- $imgURL := partial "pretalx/helpers.html" (dict
+      "func" "image"
+      "page" $page
+      "spec" "1200x800 webp q75"
+      "fallback" (site.Params.pretalxTalkImageFallback | default "img/featured.webp")) -}}
+
+{{- $room := "" -}}
+{{- $roomSlug := "" -}}
+{{- with $talk.slot -}}
+  {{- with .room -}}
+    {{- if reflect.IsMap . -}}
+      {{- /* printf keeps this a plain string; partial output is template.HTML and never compares equal to config values */ -}}
+      {{- $room = printf "%s" (partial "pretalx/helpers.html" (dict "func" "localized" "value" . "lang" "en")) -}}
+    {{- else -}}
+      {{- $room = printf "%s" . -}}
+    {{- end -}}
+    {{- $roomSlug = $room | urlize -}}
+  {{- end -}}
+{{- end -}}
+{{- $roomLabel := $room -}}
+{{- with site.Params.pretalxRoomLabels -}}
+  {{- with index . $room -}}
+    {{- $roomLabel = . -}}
   {{- end -}}
 {{- end -}}
 
-<article class="pretalx-talk-card" {{ with $talk.code }}data-pretalx-fav-id="{{ . }}"{{ end }} {{ with $talk.slot }}data-room="{{ .room }}" data-start="{{ .start }}"{{ end }}>
-  <div class="pretalx-talk-card__body">
-    {{/* Favorite toggle (schedule/talks list); hidden by default, shown when favorites.js is present */}}
-    {{- if $talk.code -}}
-    <button type="button" class="pretalx-fav-toggle" data-fav-id="{{ $talk.code }}" aria-label="Add to favorites" aria-pressed="false" title="Add to favorites">
-      <span class="pretalx-fav-icon pretalx-fav-icon--outline" aria-hidden="true">☆</span>
-      <span class="pretalx-fav-icon pretalx-fav-icon--filled" aria-hidden="true">★</span>
+{{- $typeStr := "" -}}
+{{- with $talk.submission_type -}}
+  {{- if reflect.IsMap . -}}
+    {{- $typeStr = printf "%s" (partial "pretalx/helpers.html" (dict "func" "localized" "value" . "lang" "en")) -}}
+  {{- else -}}
+    {{- $typeStr = printf "%s" . -}}
+  {{- end -}}
+{{- end -}}
+{{- $kind := "" -}}
+{{- $lcType := lower $typeStr -}}
+{{- if in $lcType "workshop" -}}
+  {{- $kind = "Workshop" -}}
+{{- else if in $lcType "talk" -}}
+  {{- $kind = "Talk" -}}
+{{- else if in $lcType "event" -}}
+  {{- $kind = "Event" -}}
+{{- else if in $lcType "panel" -}}
+  {{- $kind = "Panel" -}}
+{{- end -}}
+
+{{- $langCode := "" -}}
+{{- with $talk.content_locale -}}
+  {{- $langCode = lower . -}}
+{{- end -}}
+{{- $langMap := dict
+  "en" "English" "de" "German" "es" "Spanish" "fr" "French" "it" "Italian" "pt" "Portuguese"
+  "ru" "Russian" "ja" "Japanese" "zh" "Chinese" "ko" "Korean" "pl" "Polish" "cs" "Czech"
+  "hu" "Hungarian" "nl" "Dutch" "tr" "Turkish" "ar" "Arabic" "fa" "Persian" "he" "Hebrew"
+  "vi" "Vietnamese" "id" "Indonesian" "uk" "Ukrainian" "ro" "Romanian" "ca" "Catalan"
+  "bg" "Bulgarian" "th" "Thai" "fi" "Finnish" "eo" "Esperanto" "gl" "Galician"
+-}}
+{{- $languageLabel := (index $langMap $langCode) | default $talk.content_locale -}}
+
+{{- $slotStart := "" -}}
+{{- with $talk.slot.start -}}{{- $slotStart = . -}}{{- end -}}
+
+{{- /* Prefer the page slug so favorites stay in sync with the talk's own page */ -}}
+{{- $favId := $talk.code -}}
+{{- with $page -}}
+  {{- $favId = path.Base .RelPermalink -}}
+{{- end -}}
+{{- if $href }}<a class="pretalx-talk-card__card-link" href="{{ $href }}">{{ end -}}
+<article class="pretalx-talk-card"{{ with $favId }} data-pretalx-fav-id="{{ . }}"{{ end }}{{ with $room }} data-room="{{ . }}"{{ end }}{{ with $slotStart }} data-start="{{ . }}"{{ end }}>
+  {{- if $talk.code -}}
+  <div class="pretalx-talk-card__fav">
+    <button type="button" class="pretalx-fav-toggle" data-fav-id="{{ $favId }}" data-fav-url="{{ $href }}" data-fav-title="{{ $title }}" aria-label="Add to favorites" aria-pressed="false" title="I want to see this talk">
+      <span class="sr-only">I want to see this talk</span>
+      <span class="pretalx-fav-icon pretalx-fav-icon--outline" aria-hidden="true">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path fill="currentColor" d="M244 84L255.1 96L267.1 84.02C300.6 51.37 347 36.51 392.6 44.1C461.5 55.58 512 115.2 512 185.1V190.9C512 232.4 494.8 272.1 464.4 300.4L283.7 469.1C276.2 476.1 266.3 480 256 480C245.7 480 235.8 476.1 228.3 469.1L47.59 300.4C17.23 272.1 0 232.4 0 190.9V185.1C0 115.2 50.52 55.58 119.4 44.1C164.1 36.51 211.4 51.37 244 84C243.1 84 244 84.01 244 84L244 84zM255.1 163.9L210.1 117.1C188.4 96.28 157.6 86.4 127.3 91.44C81.55 99.07 48 138.7 48 185.1V190.9C48 219.1 59.71 246.1 80.34 265.3L256 429.3L431.7 265.3C452.3 246.1 464 219.1 464 190.9V185.1C464 138.7 430.4 99.07 384.7 91.44C354.4 86.4 323.6 96.28 301.9 117.1L255.1 163.9z"/></svg>
+      </span>
+      <span class="pretalx-fav-icon pretalx-fav-icon--filled" aria-hidden="true">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path fill="currentColor" d="M47.6 300.4L228.3 469.1c7.5 7 17.4 10.9 27.7 10.9s20.2-3.9 27.7-10.9L464.4 300.4c30.4-28.3 47.6-68 47.6-109.5v-5.8c0-69.9-50.5-129.5-119.4-141C347 36.5 300.6 51.4 268 84L256 96 244 84c-32.6-32.6-79-47.5-124.6-39.9C50.5 55.6 0 115.2 0 185.1v5.8c0 41.5 17.2 81.2 47.6 109.5z"/></svg>
+      </span>
     </button>
-    {{- end -}}
-    {{/* Title */}}
-    <h3 class="pretalx-talk-card__title">
-      {{- if $href -}}
-        <a href="{{ $href }}" class="pretalx-talk-card__link">{{ $title }}</a>
-      {{- else -}}
-        {{ $title }}
+  </div>
+  {{- end -}}
+
+  {{- if $imgURL -}}
+  <div class="pretalx-talk-card__bg" style="background-image: url('{{ $imgURL | safeURL }}');">
+    <div class="pretalx-talk-card__bg-overlay"></div>
+  </div>
+  {{- end -}}
+
+  <div class="pretalx-talk-card__content">
+    <div class="pretalx-talk-card__top">
+      {{- if $title -}}
+      <div class="pretalx-talk-card__title">{{ $title }}</div>
       {{- end -}}
-    </h3>
 
-    {{/* Recording available badge */}}
-    {{- if $hasRecording -}}
-    <span class="pretalx-talk-card__recording-badge" aria-label="Recording available">Recording available</span>
-    {{- end -}}
-
-    {{/* Metadata */}}
-    <div class="pretalx-talk-card__meta">
-      {{- with $talk.submission_type -}}
-        {{- $type := . -}}
-        {{- if reflect.IsMap . -}}
-          {{- $type = partial "pretalx/helpers.html" (dict "func" "localized" "value" . "lang" "en") -}}
+      <div class="pretalx-talk-card__meta">
+        {{- if $room -}}
+        <span class="pretalx-talk-card__room-badge {{ printf "pretalx-talk-card__room-badge--%s" $roomSlug }}">{{ $roomLabel }}</span>
         {{- end -}}
-        <span class="pretalx-talk-card__type">{{ $type }}</span>
-      {{- end -}}
 
-      {{- with $talk.duration -}}
-        <span class="pretalx-talk-card__duration">{{ . }} min</span>
-      {{- end -}}
+        {{- if $kind -}}
+        <span class="pretalx-talk-card__kind-badge">
+          <span class="pretalx-talk-card__kind-badge-inner">{{ $kind }}</span>
+        </span>
+        {{- end -}}
 
-      {{- with $talk.slot -}}
-        {{- with .room -}}
-          {{- $room := . -}}
-          {{- if reflect.IsMap . -}}
-            {{- $room = partial "pretalx/helpers.html" (dict "func" "localized" "value" . "lang" "en") -}}
+        {{- if $showDuration -}}{{- with $talk.duration -}}
+        <div class="pretalx-talk-card__meta-item">
+          <span class="pretalx-talk-card__meta-icon pretalx-talk-card__meta-icon--clock" title="Duration" aria-label="Duration">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 2a8 8 0 1 1 0 16 8 8 0 0 1 0-16zm1 4a1 1 0 0 0-2 0v4.382l-2.105 2.105a1 1 0 1 0 1.414 1.414l2.391-2.391A1.5 1.5 0 0 0 13 12.5V8z"/></svg>
+          </span>
+          <span class="pretalx-talk-card__meta-text">{{ . }} minutes</span>
+        </div>
+        {{- end -}}{{- end -}}
+
+        {{- if $langCode -}}
+        <div class="pretalx-talk-card__meta-item">
+          <span class="pretalx-talk-card__meta-icon pretalx-talk-card__meta-icon--language" title="Language" aria-label="Language">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512"><path fill="currentColor" d="M0 128C0 92.7 28.7 64 64 64H256h48 16H576c35.3 0 64 28.7 64 64V384c0 35.3-28.7 64-64 64H320 304 256 64c-35.3 0-64-28.7-64-64V128zm320 0V384H576V128H320zM178.3 175.9c-3.2-7.2-10.4-11.9-18.3-11.9s-15.1 4.7-18.3 11.9l-64 144c-4.5 10.1 .1 21.9 10.2 26.4s21.9-.1 26.4-10.2l8.9-20.1h73.6l8.9 20.1c4.5 10.1 16.3 14.6 26.4 10.2s14.6-16.3 10.2-26.4l-64-144zM160 233.2L179 276H141l19-42.8zM448 164c11 0 20 9 20 20v4h44 16c11 0 20 9 20 20s-9 20-20 20h-2l-1.6 4.5c-8.9 24.4-22.4 46.6-39.6 65.4c.9 .6 1.8 1.1 2.7 1.6l18.9 11.3c9.5 5.7 12.5 18 6.9 27.4s-18 12.5-27.4 6.9l-18.9-11.3c-4.5-2.7-8.8-5.5-13.1-8.5c-10.6 7.5-21.9 14-34 19.4l-3.6 1.6c-10.1 4.5-21.9-.1-26.4-10.2s.1-21.9 10.2-26.4l3.6-1.6c6.4-2.9 12.6-6.1 18.5-9.8l-12.2-12.2c-7.8-7.8-7.8-20.5 0-28.3s20.5-7.8 28.3 0l14.6 14.6 .5 .5c12.4-13.1 22.5-28.3 29.8-45H448 376c-11 0-20-9-20-20s9-20 20-20h52v-4c0-11 9-20 20-20z"/></svg>
+          </span>
+          <span class="pretalx-talk-card__meta-text">{{ $languageLabel }}</span>
+        </div>
+        {{- end -}}
+
+        {{- if or $hasVideo $recNote -}}
+        <div class="pretalx-talk-card__meta-item">
+          <span class="pretalx-talk-card__meta-icon pretalx-talk-card__meta-icon--video" title="Recording" aria-label="Recording">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M4 5h12a2 2 0 0 1 2 2v2.382l2.553-1.702A1 1 0 0 1 22 8.56v6.88a1 1 0 0 1-1.447.88L18 14.618V17a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2zm0 2v10h12V7H4z"/></svg>
+          </span>
+          {{- if $hasVideo -}}
+          <span class="talk-recording talk-recording--live">Video available</span>
+          {{- else -}}
+          <span class="pretalx-talk-card__meta-text">{{ $recNote }}</span>
           {{- end -}}
-          <span class="pretalx-talk-card__room">{{ $room }}</span>
+        </div>
+        {{- end -}}
+      </div>
+    </div>
+
+    <div class="pretalx-talk-card__middle">
+      {{- $summary := "" -}}
+      {{- with $page -}}
+        {{- $summary = .Params.summary | default .Description | default "" -}}
+      {{- end -}}
+      {{- if not $summary -}}
+        {{- with $talk.abstract -}}
+          {{- $summary = partial "pretalx/helpers.html" (dict "func" "excerpt" "value" .) -}}
         {{- end -}}
       {{- end -}}
-
-      {{- with $talk.content_locale -}}
-        <span class="pretalx-talk-card__language">{{ . }}</span>
+      {{- with $summary -}}
+      <div class="pretalx-talk-card__summary">{{ . }}</div>
       {{- end -}}
     </div>
 
-    {{/* Abstract excerpt */}}
-    {{- with $talk.abstract -}}
-      <p class="pretalx-talk-card__abstract">{{ . | plainify | truncate 200 }}</p>
-    {{- end -}}
-  </div>
-
-  {{/* Speakers (link to speaker page, new tab) */}}
-  {{- with $talk.speakers -}}
-  <div class="pretalx-talk-card__speakers">
-    {{- range . -}}
+    {{- with $talk.speakers -}}
+    <div class="pretalx-talk-card__speakers">
+      {{- range . -}}
       <div class="pretalx-talk-card__speaker">
-        {{ partial "pretalx/speaker-link.html" (dict "speaker" . "prefix" $prefix "section" $speakersSection "showAvatar" true) }}
+        {{ partial "pretalx/speaker-link.html" (dict "speaker" . "prefix" $prefix "section" $speakersSection "showAvatar" true "plain" (ne $href "")) }}
       </div>
+      {{- end -}}
+    </div>
     {{- end -}}
   </div>
-  {{- end -}}
 </article>
+{{- if $href }}</a>{{ end -}}

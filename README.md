@@ -5,7 +5,7 @@ A [Hugo](https://gohugo.io) module that integrates with [Pretalx](https://pretal
 ## Features
 
 - **CLI tool** — fetches talks and speakers from any Pretalx instance, writes raw JSON data files and generates Hugo content pages
-- **Multi-event support** — configure multiple events (e.g. yearly conferences) each mapped to a URL prefix
+- **Multi-event support** — configure multiple events (e.g. yearly conferences); data is keyed by prefix and pages share flat `/talks` / `/speakers` URLs, distinguished by tags
 - **Hugo module** — provides layouts, shortcodes, and partials that read directly from the Pretalx API data
 - **Unstyled by design** — semantic HTML with `pretalx-*` CSS classes; you provide the visual identity
 - **No runtime dependencies** — pure Go CLI (stdlib only), pure Hugo templates
@@ -60,9 +60,9 @@ go run github.com/GodotFest/hugo-pretalx@latest fetch
 This creates:
 - `data/pretalx/2025/talks.json` — raw Pretalx API data
 - `data/pretalx/2025/speakers.json` — raw Pretalx API data
-- `content/2025/talks/<slug>/index.md` — one page per talk
-- `content/2025/speakers/<slug>/index.md` — one page per speaker
-- `content/2025/talks/_index.md`, `content/2025/speakers/_index.md`, `content/2025/schedule/_index.md` — section pages
+- `content/talks/<slug>/index.md` — one page per talk (flat; slug conflicts get `-1`, `-2`, …)
+- `content/speakers/<slug>/index.md` — one page per speaker (same collision rules)
+- `content/talks/_index.md`, `content/speakers/_index.md`, `content/schedule/_index.md` — section pages (skipped if they already exist, unless `--force`)
 
 ### 4. Build your site
 
@@ -86,6 +86,7 @@ hugo-pretalx fetch [flags]
 | `--dry-run` | | Print what would be done without writing |
 | `--force` | | Overwrite existing content (preserves manual body content) |
 | `--data-only` | | Only write data files, skip content page generation |
+| `--prune` | | Delete generated pages that are no longer in the fetched set |
 | `--event` | | Only fetch this specific event |
 
 ### Install the CLI
@@ -137,8 +138,9 @@ hugo-pretalx fetch
 | `instance` | Base URL of the Pretalx instance |
 | `lang` | Language code for API requests (default: `"en"`) |
 | `events[].event` | Pretalx event slug (as in the URL) |
-| `events[].prefix` | Local directory prefix for content and data |
-| `events[].tags` | Auto-applied tags on all generated content pages |
+| `events[].prefix` | Data directory key (`data/pretalx/<prefix>/`) and `pretalx_prefix` front matter value |
+| `events[].tags` | Auto-applied tags on all generated content pages (include a year tag such as `"2025"` for filtering) |
+| `events[].states` | Submission states to include (default: `["confirmed"]`). For testing you can widen this, e.g. `["confirmed", "accepted", "submitted"]`, to preview the program before talks are confirmed |
 | `events[].speaker_layout` | Override layout for speaker pages (default: `pretalx-speaker`) |
 | `events[].talk_layout` | Override layout for talk pages (default: `pretalx-talk`) |
 
@@ -148,7 +150,7 @@ hugo-pretalx fetch
 |-------|---------|-------------|
 | `pretalxRecordingField` | `"recording"` | Front matter / data key used for the talk recording URL. When set on a talk (in data or page params), the talk single page shows a YouTube embed or "Watch recording" link, and talk cards (including schedule) show a "Recording available" badge. |
 | `pretalxSpecialRooms` | *(none)* | Slice of room names that are treated as "special" events (e.g. registration, breaks, lunch). Talks scheduled in these rooms appear in the schedule timeline as special slots (title, room, duration) instead of full talk cards. |
-| `eventYears` | *(none)* | Slice of event prefixes (e.g. `["2025", "2024"]`) for the event-year selector. When set, schedule, talks, and speakers pages show a switcher with links to each prefix’s talks/speakers/schedule. Use `"legacy"` as a prefix and it is displayed as "Archive". |
+| `pretalxSpeakerLinksInNewTab` | `false` | When `true`, speaker name links (grid cards and `pretalx-speaker-link` in talk cards) use `target="_blank"`. Default is same-tab navigation for on-site speaker pages. External URLs (e.g. recording links on talk pages) are unchanged. |
 
 ### Environment Variables
 
@@ -169,22 +171,23 @@ your-site/
 │       ├── talks.json
 │       └── speakers.json
 └── content/
-    ├── 2025/
-    │   ├── talks/
-    │   │   ├── _index.md       # Talks list page
-    │   │   └── my-talk/
-    │   │       └── index.md    # Individual talk page
-    │   ├── speakers/
-    │   │   ├── _index.md       # Speakers grid page
-    │   │   └── jane-doe/
-    │   │       └── index.md    # Individual speaker page
-    │   └── schedule/
-    │       └── _index.md       # Schedule page
-    └── 2026/
-        └── ...
+    ├── talks/
+    │   ├── _index.md           # Talks list (hand-maintained or generated)
+    │   ├── my-talk/
+    │   │   └── index.md        # Talk page (tags include year)
+    │   └── my-talk-1/          # Conflict with an existing slug → -1, -2, …
+    │       └── index.md
+    ├── speakers/
+    │   ├── _index.md
+    │   └── jane-doe/
+    │       └── index.md
+    └── schedule/
+        └── _index.md           # Latest-year schedule (pretalx_prefix in front matter)
 ```
 
-**Slugs:** Talk and speaker directory names are derived from title/name; if two items slugify to the same value, the CLI appends `-<code>` so each page has a unique URL.
+**Slugs:** Talk and speaker directory names are derived from title/name. If the path already exists and is not the same Pretalx item (`pretalx_code` + `pretalx_prefix`), the CLI tries `base-1`, `base-2`, and so on. Re-runs reuse the existing stub when the identity matches.
+
+**Pruning:** Data files always mirror the API, but content pages are only ever added by default, so a talk that is withdrawn or excluded by `events[].states` leaves an empty page behind at its old URL. Run `hugo-pretalx fetch --prune` to make content match the fetch as well: it deletes page bundles whose `pretalx_prefix` matches the event being fetched and whose `pretalx_code` is no longer in the fetched set. Pages of other event prefixes, hand-written pages without `pretalx_code`, and generated pages with manually added body content are never removed. Combine with `--dry-run` first to see what would go.
 
 ## Layouts
 
@@ -192,7 +195,7 @@ The module provides these layouts (set via `layout` in front matter):
 
 | Layout | Used for | Description |
 |--------|----------|-------------|
-| `pretalx-talk` | Individual talk pages | Shows title, speaker cards (with links in new tab), optional recording embed (see `pretalxRecordingField`), abstract, metadata |
+| `pretalx-talk` | Individual talk pages | Shows title, speaker links (same tab by default; see `pretalxSpeakerLinksInNewTab`), optional recording embed (see `pretalxRecordingField`), abstract, metadata |
 | `pretalx-talks` | Talks list page | Lists all talks with cards |
 | `pretalx-speaker` | Individual speaker pages | Shows name, bio, avatar, and their talks |
 | `pretalx-speakers` | Speakers grid page | Grid of all speaker cards |
@@ -230,25 +233,33 @@ Embed conference components in any markdown page:
 
 ## Styling
 
-The module outputs semantic HTML with BEM-style CSS classes. No visual styles are applied — you control the look via your site's CSS.
+The module outputs semantic HTML with BEM-style CSS classes. **Branding and colors** come from your site CSS. The optional `base.css` file only provides minimal layout defaults (see below).
 
 ### Key CSS Classes
 
 ```
-.pretalx-speakers__grid         — Speaker grid container
-.pretalx-speaker-card           — Individual speaker card
-.pretalx-speaker-card__avatar   — Speaker avatar wrapper
-.pretalx-speaker-card__name     — Speaker name
-.pretalx-speaker-card__bio      — Speaker biography excerpt
+.pretalx-speakers__grid              — Speaker grid container
+.pretalx-speaker-card                — Individual speaker card (row: avatar + info)
+.pretalx-speaker-card__avatar        — Speaker avatar wrapper
+.pretalx-speaker-card__name         — Speaker name heading (contains link when linked)
+.pretalx-speaker-card__name-link     — Link to speaker page (only the name is linked)
+.pretalx-speaker-card__bio           — Speaker biography excerpt
 
-.pretalx-talks__list            — Talks list container
-.pretalx-talk-card              — Individual talk card
-.pretalx-talk-card__title       — Talk title
-.pretalx-talk-card__recording-badge — "Recording available" when recording URL is set
-.pretalx-talk-card__meta        — Metadata row (type, duration, room)
-.pretalx-talk-card__speakers    — Speakers in a talk card (links open in new tab)
-.pretalx-speaker-link           — Speaker link (e.g. in talk cards)
-.pretalx-talk__recording        — Recording section on talk single page (embed or link)
+.pretalx-talks__list                 — Talks list container
+.pretalx-talks__item                 — Wrapper around each card (favorites filter, spacing)
+.pretalx-talk-card                   — Talk card (hero background, grid content)
+.pretalx-talk-card__fav              — Favorite control wrapper (absolute top-right)
+.pretalx-talk-card__bg               — Background image layer; __bg-overlay = gradient
+.pretalx-talk-card__content          — Main grid (top / middle / speakers rows)
+.pretalx-talk-card__title            — Title (link when `linked` is true)
+.pretalx-talk-card__meta             — Meta row: room badge, kind badge, duration, language, recording
+.pretalx-talk-card__room-badge       — Pill room label; modifier `--{urlized-room}`
+.pretalx-talk-card__kind-badge-inner — Talk / Workshop / Panel / Event pill
+.pretalx-talk-card__meta-item        — Row with icon + text (duration, language, recording)
+.pretalx-talk-card__summary          — Abstract excerpt (replaces legacy summary)
+.pretalx-talk-card__speakers         — Speakers row on a talk card
+.pretalx-speaker-link                — Speaker link (e.g. in talk cards; optional new tab via `pretalxSpeakerLinksInNewTab`)
+.pretalx-talk__recording             — Recording section on talk single page (embed or link)
 
 .pretalx-schedule               — Schedule container
 .pretalx-schedule__tabs         — Day tab navigation
@@ -261,7 +272,9 @@ The module outputs semantic HTML with BEM-style CSS classes. No visual styles ar
 
 ### Optional Base CSS
 
-The module includes a structural-only stylesheet you can import:
+The module includes a **minimal structural** stylesheet (flex/grid gaps, default speaker card row layout, talk card borders, schedule tabs). It avoids brand colors on speaker placeholders and does not set site-specific grid column counts — import it if you want a quick starting layout, or skip it and style all `pretalx-*` classes yourself.
+
+You can import it as:
 
 ```css
 @import "css/pretalx/base.css";

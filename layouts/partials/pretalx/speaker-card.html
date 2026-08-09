@@ -4,39 +4,47 @@
   Params:
     .speaker — A speaker object (from Pretalx talks[].speakers or speakers endpoint)
     .prefix  — The event prefix (e.g. "2025") for linking
-    .linked  — If true, wrap in a link to the speaker's page (default: false)
+    .linked  — If true, link the speaker name to their page (default: false)
     .section — Optional; when set with linked, resolve href by pretalx_code so slug is correct after dedup
+
+  Site param (optional): pretalxSpeakerLinksInNewTab — when true, name links use target="_blank".
 */}}
 {{- $speaker := .speaker -}}
 {{- $prefix := .prefix | default "" -}}
 {{- $linked := .linked | default false -}}
 {{- $section := .section -}}
+{{- $newTab := site.Params.pretalxSpeakerLinksInNewTab | default false -}}
 {{- $name := index $speaker "name" | default "Unknown Speaker" -}}
 {{- $code := index $speaker "code" -}}
-{{- $href := "" -}}
-{{- if and $linked $prefix -}}
-  {{- if and $section $code -}}
-    {{- range $section.Pages -}}
-      {{- if eq .Params.pretalx_code $code -}}
-        {{- $href = .RelPermalink -}}
-        {{- break -}}
-      {{- end -}}
+{{- $speakerPage := "" -}}
+{{- if and $section $code -}}
+  {{- range $section.Pages -}}
+    {{- if and (eq .Params.pretalx_code $code) (or (not $prefix) (eq .Params.pretalx_prefix $prefix)) -}}
+      {{- $speakerPage = . -}}
+      {{- break -}}
     {{- end -}}
   {{- end -}}
-  {{- if not $href -}}
-    {{- $slug := ($name | urlize) | replace "/" "-" -}}
-    {{- if not $slug -}}
-      {{- $slug = $code | lower -}}
-    {{- end -}}
-    {{- $href = printf "/%s/speakers/%s/" $prefix $slug -}}
+{{- end -}}
+{{- $slug := replace ($name | urlize) "/" "-" -}}
+{{- if not $slug -}}
+  {{- $slug = $code | lower -}}
+{{- end -}}
+{{- $href := "" -}}
+{{- if $linked -}}
+  {{- $href = printf "/speakers/%s/" $slug -}}
+  {{- with $speakerPage -}}
+    {{- $href = .RelPermalink -}}
   {{- end -}}
 {{- end -}}
 
 <div class="pretalx-speaker-card">
-  {{- if $href }}<a href="{{ $href }}" class="pretalx-speaker-card__link" target="_blank" rel="noopener noreferrer">{{ end -}}
-
   <div class="pretalx-speaker-card__avatar">
-    {{- with index $speaker "avatar" -}}
+    {{- with partial "pretalx/helpers.html" (dict
+          "func" "image"
+          "page" $speakerPage
+          "spec" "320x320 webp q80"
+          "method" "fill"
+          "fallback" site.Params.pretalxSpeakerAvatarFallback) -}}
       <img src="{{ . }}" alt="{{ $name }}" loading="lazy" decoding="async" class="pretalx-speaker-card__img">
     {{- else -}}
       <div class="pretalx-speaker-card__placeholder" aria-hidden="true">
@@ -46,11 +54,15 @@
   </div>
 
   <div class="pretalx-speaker-card__info">
-    <h3 class="pretalx-speaker-card__name">{{ $name }}</h3>
+    <h3 class="pretalx-speaker-card__name">
+      {{- if $href -}}
+        <a href="{{ $href }}" class="pretalx-speaker-card__name-link"{{ if $newTab }} target="_blank" rel="noopener noreferrer"{{ end }}>{{ $name }}</a>
+      {{- else -}}
+        {{ $name }}
+      {{- end -}}
+    </h3>
     {{- with index $speaker "biography" -}}
       <p class="pretalx-speaker-card__bio">{{ . | plainify | truncate 120 }}</p>
     {{- end -}}
   </div>
-
-  {{- if $href }}</a>{{ end -}}
 </div>

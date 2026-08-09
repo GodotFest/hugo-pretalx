@@ -3,10 +3,6 @@
 {{- $allTalks := index site.Data.pretalx $prefix "talks" | default slice -}}
 {{- $pageSize := 15 -}}
 
-{{ if site.Params.eventYears }}
-{{ partial "pretalx/event-year-selector.html" (dict "context" .) }}
-{{ end }}
-
 <header class="pretalx-talks__header">
   <h1 class="pretalx-talks__title">{{ .Title }}</h1>
   <div class="pretalx-talks__actions">
@@ -22,8 +18,8 @@
 </div>
 {{ end }}
 
-{{- $talksSection := .Site.GetPage (printf "/%s/talks" $prefix) -}}
-{{- $speakersSection := .Site.GetPage (printf "/%s/speakers" $prefix) -}}
+{{- $talksSection := .Site.GetPage "/talks" -}}
+{{- $speakersSection := .Site.GetPage "/speakers" -}}
 {{- if eq (len $allTalks) 0 -}}
   <p class="pretalx-talks__empty">No talks available yet.</p>
 {{- else -}}
@@ -41,7 +37,7 @@
   <script type="text/javascript" src="{{ $infiniteJS.RelPermalink }}" integrity="{{ $infiniteJS.Data.Integrity }}" defer></script>
 {{ end }}
 {{/* Favorites: needs schedule data for prefix; inject minimal data so favorites.js can namespace storage */}}
-<script id="pretalx-schedule-data" type="application/json">{{ dict "prefix" $prefix | jsonify | safeHTML }}</script>
+<script id="pretalx-schedule-data" type="application/json">{{ dict "prefix" $prefix | jsonify | safeJS }}</script>
 {{ $favJS := resources.Get "js/pretalx/favorites.js" }}
 {{ if $favJS }}
   {{ $favJS = $favJS | resources.Minify | resources.Fingerprint }}

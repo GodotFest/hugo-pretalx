@@ -13,8 +13,5 @@ languageCode = "en"
 # When set on a talk (data or front matter), single page shows embed and cards show "Recording available".
 [params]
   pretalxRecordingField = "recording"
-  # For speaker page "talks grouped by year"; list event prefixes to show (newest first).
-  eventYears = ["2025"]
-  defaultEventYear = "2025"
   # Room names that render as "special" events (e.g. registration, breaks) in the schedule timeline
   # pretalxSpecialRooms = ["General info"]

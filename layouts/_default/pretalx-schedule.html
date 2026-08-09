@@ -3,10 +3,6 @@
 {{- $allTalks := index site.Data.pretalx $prefix "talks" | default slice -}}
 {{- $specialRooms := site.Params.pretalxSpecialRooms | default slice -}}
 
-{{ if site.Params.eventYears }}
-{{ partial "pretalx/event-year-selector.html" (dict "context" .) }}
-{{ end }}
-
 <header class="pretalx-schedule__header">
   <h1 class="pretalx-schedule__title">{{ .Title }}</h1>
   <div class="pretalx-schedule__actions">
@@ -49,7 +45,7 @@
 
 {{/* Inject schedule data as JSON for ICS and client-side interactivity */}}
 <script id="pretalx-schedule-data" type="application/json">
-  {{- dict "baseURL" .Site.BaseURL "prefix" $prefix "sessions" $sessions "specials" $specials | jsonify | safeHTML -}}
+  {{- dict "baseURL" .Site.BaseURL "prefix" $prefix "sessions" $sessions "specials" $specials | jsonify | safeJS -}}
 </script>
 
 {{ $scheduleJS := resources.Get "js/pretalx/schedule.js" }}

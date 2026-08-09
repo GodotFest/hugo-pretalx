@@ -16,8 +16,8 @@
   {{- end -}}
 {{- end -}}
 
-{{- $talksSection := site.GetPage (printf "/%s/talks" $prefix) -}}
-{{- $speakersSection := site.GetPage (printf "/%s/speakers" $prefix) -}}
+{{- $talksSection := site.GetPage "/talks" -}}
+{{- $speakersSection := site.GetPage "/speakers" -}}
 {{- if $talk.title -}}
   {{ partial "pretalx/talk-card.html" (dict "talk" $talk "prefix" $prefix "linked" true "talksSection" $talksSection "speakersSection" $speakersSection) }}
 {{- else -}}

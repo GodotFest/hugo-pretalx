@@ -6,7 +6,7 @@
 
 {{- $allSpeakers := index site.Data.pretalx $prefix "speakers" | default slice -}}
 
-{{- $speakersSection := site.GetPage (printf "/%s/speakers" $prefix) -}}
+{{- $speakersSection := site.GetPage "/speakers" -}}
 {{- if eq (len $allSpeakers) 0 -}}
   <p class="pretalx-speakers__empty">No speakers announced yet.</p>
 {{- else -}}

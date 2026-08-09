@@ -17,7 +17,8 @@
 {{- end -}}
 
 {{- if $speaker.name -}}
-  {{ partial "pretalx/speaker-card.html" (dict "speaker" $speaker "prefix" $prefix "linked" true) }}
+  {{- $speakersSection := site.GetPage "/speakers" -}}
+  {{ partial "pretalx/speaker-card.html" (dict "speaker" $speaker "prefix" $prefix "linked" true "section" $speakersSection) }}
 {{- else -}}
   <p class="pretalx-error">Speaker with code "{{ $code }}" not found in {{ $prefix }} data.</p>
 {{- end -}}

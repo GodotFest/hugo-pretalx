@@ -6,25 +6,26 @@
   var STORAGE_KEY_BASE = "pretalx:favorites:";
   var TOGGLE_KEY_BASE = "pretalx:favoritesOnly:";
 
-  function getPrefix() {
+  function scheduleData() {
     var el = document.getElementById("pretalx-schedule-data");
-    if (!el) return "";
+    if (!el) return {};
     try {
       var data = JSON.parse(el.textContent || "{}");
-      return (data && data.prefix) ? data.prefix : "";
+      return data && typeof data === "object" ? data : {};
     } catch (_) {
-      return "";
+      return {};
     }
   }
 
+  // A site can point these at its own keys to share favorites with non-pretalx pages
   function storageKey() {
-    var p = getPrefix();
-    return STORAGE_KEY_BASE + (p || "default") + ":v1";
+    var data = scheduleData();
+    return data.favoritesKey || STORAGE_KEY_BASE + (data.prefix || "default") + ":v1";
   }
 
   function toggleStorageKey() {
-    var p = getPrefix();
-    return TOGGLE_KEY_BASE + (p || "default") + ":v1";
+    var data = scheduleData();
+    return data.favoritesOnlyKey || TOGGLE_KEY_BASE + (data.prefix || "default") + ":v1";
   }
 
   function getFavorites() {

@@ -60,8 +60,8 @@
   {{- end -}}
 {{- end -}}
 
-{{- $talksSection := site.GetPage (printf "/%s/talks" $prefix) -}}
-{{- $speakersSection := site.GetPage (printf "/%s/speakers" $prefix) -}}
+{{- $talksSection := site.GetPage "/talks" -}}
+{{- $speakersSection := site.GetPage "/speakers" -}}
 {{- if eq (len $filtered) 0 -}}
   <p class="pretalx-talks__empty">No talks match the given criteria.</p>
 {{- else -}}

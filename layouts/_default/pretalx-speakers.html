@@ -2,10 +2,6 @@
 {{- $prefix := .Params.pretalx_prefix -}}
 {{- $allSpeakers := index site.Data.pretalx $prefix "speakers" | default slice -}}
 
-{{ if site.Params.eventYears }}
-{{ partial "pretalx/event-year-selector.html" (dict "context" .) }}
-{{ end }}
-
 <header class="pretalx-speakers__header">
   <h1 class="pretalx-speakers__title">{{ .Title }}</h1>
 </header>
@@ -16,7 +12,7 @@
 </div>
 {{ end }}
 
-{{- $speakersSection := .Site.GetPage (printf "/%s/speakers" $prefix) -}}
+{{- $speakersSection := .Site.GetPage "/speakers" -}}
 {{- if eq (len $allSpeakers) 0 -}}
   <p class="pretalx-speakers__empty">No speakers announced yet.</p>
 {{- else -}}

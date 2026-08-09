@@ -14,7 +14,12 @@
 
 <article class="pretalx-speaker">
   <header class="pretalx-speaker__header">
-    {{- with $speaker.avatar -}}
+    {{- with partial "pretalx/helpers.html" (dict
+          "func" "image"
+          "page" $
+          "spec" "320x320 webp q80"
+          "method" "fill"
+          "fallback" site.Params.pretalxSpeakerAvatarFallback) -}}
     <div class="pretalx-speaker__avatar pretalx-speaker__avatar--large">
       <img src="{{ . }}" alt="{{ $speaker.name }}" loading="lazy" decoding="async">
     </div>
@@ -47,8 +52,8 @@
     {{- end -}}
   {{- end -}}
 
-  {{- $talksSection := .Site.GetPage (printf "/%s/talks" $prefix) -}}
-  {{- $speakersSection := .Site.GetPage (printf "/%s/speakers" $prefix) -}}
+  {{- $talksSection := .Site.GetPage "/talks" -}}
+  {{- $speakersSection := .Site.GetPage "/speakers" -}}
   {{- if gt (len $speakerTalks) 0 -}}
   <section class="pretalx-speaker__talks">
     <h2>Sessions</h2>
