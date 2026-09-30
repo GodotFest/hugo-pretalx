@@ -1,0 +1,22 @@
+{{/* Returns a set of "<prefix>/<code>" for hand-written pages in the given content directory. */}}
+{{- $authored := dict -}}
+{{- if os.FileExists . -}}
+  {{- range os.ReadDir . -}}
+    {{- $file := cond .IsDir (printf "%s/%s/index.md" $ .Name) (printf "%s/%s" $ .Name) -}}
+    {{- if and (strings.HasSuffix $file ".md") (os.FileExists $file) -}}
+      {{- $text := os.ReadFile $file -}}
+      {{- $code := "" -}}
+      {{- $prefix := "" -}}
+      {{- with findRESubmatch `(?m)^pretalx_code:\s*["']?([^"'\s]+)` $text 1 -}}
+        {{- $code = index . 0 1 -}}
+      {{- end -}}
+      {{- with findRESubmatch `(?m)^pretalx_prefix:\s*["']?([^"'\s]+)` $text 1 -}}
+        {{- $prefix = index . 0 1 -}}
+      {{- end -}}
+      {{- if and $code $prefix -}}
+        {{- $authored = merge $authored (dict (lower (printf "%s/%s" $prefix $code)) true) -}}
+      {{- end -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+{{- return $authored -}}

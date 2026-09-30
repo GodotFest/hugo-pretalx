@@ -1,0 +1,74 @@
+{{/*
+  pretalx/adapter.html — Builds talk or speaker pages from data/pretalx/<prefix>/ at build time.
+  Called from content/<section>/_content.gotmpl:
+
+    {{ partial "pretalx/adapter.html" (dict "section" "talks" "adapter" .) }}
+
+  Only prefixes with an event.json (written by `hugo-pretalx fetch`) get pages. Items that
+  already have a hand-written page in the site's content/<section>/ (same pretalx_code and
+  pretalx_prefix in YAML front matter) are skipped, so authored pages always win. Slugs match
+  the CLI's slugify; a slug taken on disk or earlier in the run gets -1, -2, …
+*/}}
+
+{{- $section := .section -}}
+{{- $adapter := .adapter -}}
+{{- $isTalk := eq $section "talks" -}}
+{{- $contentDir := printf "content/%s" $section -}}
+{{- $authored := partial "pretalx/adapter-authored.html" $contentDir -}}
+{{- $used := newScratch -}}
+{{- $imageExts := slice ".jpg" ".jpeg" ".png" ".gif" ".webp" ".tif" ".tiff" ".bmp" -}}
+
+{{- range $prefix, $data := $adapter.Site.Data.pretalx -}}
+  {{- with $data.event -}}
+    {{- $event := . -}}
+    {{- $items := index $data $section | default slice -}}
+    {{- $layout := cond $isTalk ($event.talk_layout | default "pretalx-talk") ($event.speaker_layout | default "pretalx-speaker") -}}
+    {{- $tags := ($event.tags | default slice) | append (cond $isTalk "talk" "speaker") -}}
+
+    {{- range sort $items "code" -}}
+      {{- $code := .code -}}
+      {{- $title := cond $isTalk .title .name -}}
+      {{- if reflect.IsMap $title -}}
+        {{- $title = index $title "en" -}}
+      {{- end -}}
+      {{- if and $code $title (not (index $authored (lower (printf "%s/%s" $prefix $code)))) -}}
+        {{- $base := partial "pretalx/adapter-slug.html" $title | default (lower $code) -}}
+        {{- $slug := $base -}}
+        {{- $n := 0 -}}
+        {{- range seq 100 -}}
+          {{- if not (or ($used.Get $slug) (os.FileExists (printf "%s/%s" $contentDir $slug)) (os.FileExists (printf "%s/%s.md" $contentDir $slug))) -}}
+            {{- break -}}
+          {{- end -}}
+          {{- $n = add $n 1 -}}
+          {{- $slug = printf "%s-%d" $base $n -}}
+        {{- end -}}
+        {{- $used.Set $slug true -}}
+
+        {{- $adapter.AddPage (dict
+          "kind" "page"
+          "path" $slug
+          "title" $title
+          "layout" $layout
+          "params" (dict "pretalx_code" $code "pretalx_prefix" $prefix "tags" $tags)
+        ) -}}
+
+        {{- with cond $isTalk .image .avatar -}}
+          {{- $url := . -}}
+          {{- $ext := path.Ext (urls.Parse $url).Path | lower -}}
+          {{- if in $imageExts $ext -}}
+            {{- with try (resources.GetRemote $url) -}}
+              {{- with .Err -}}
+                {{- warnf "[pretalx] Skipping image %s: %s" $url . -}}
+              {{- else with .Value -}}
+                {{- $adapter.AddResource (dict
+                  "path" (printf "%s/featured%s" $slug $ext)
+                  "content" (dict "mediaType" .MediaType.Type "value" .Content)
+                ) -}}
+              {{- end -}}
+            {{- end -}}
+          {{- end -}}
+        {{- end -}}
+      {{- end -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}

@@ -4,12 +4,12 @@ A [Hugo](https://gohugo.io) module that integrates with [Pretalx](https://pretal
 
 ## Features
 
-- **CLI tool** — fetches talks and speakers from any Pretalx instance, writes raw JSON data files and generates Hugo content pages
+- **CLI tool** — fetches talks and speakers from any Pretalx instance and writes raw JSON data files
+- **Build-time pages** — [content adapters](https://gohugo.io/content-management/content-adapters/) create talk and speaker pages (and their images) from the data when Hugo builds, so nothing generated needs to be committed
 - **Multi-event support** — configure multiple events (e.g. yearly conferences); data is keyed by prefix and pages share flat `/talks` / `/speakers` URLs, distinguished by tags
 - **Hugo module** — provides layouts, shortcodes, and partials that read directly from the Pretalx API data
 - **Unstyled by design** — semantic HTML with `pretalx-*` CSS classes; you provide the visual identity
-- **No runtime dependencies** — pure Go CLI (stdlib only), pure Hugo templates
-- **Works offline** — data files can be committed to git; the site builds without API access
+- **No runtime dependencies** — pure Go CLI (stdlib only), pure Hugo templates (Hugo 0.141+)
 
 ## Quick Start
 
@@ -60,17 +60,21 @@ go run github.com/GodotFest/hugo-pretalx@latest fetch
 This creates:
 - `data/pretalx/2025/talks.json` — raw Pretalx API data
 - `data/pretalx/2025/speakers.json` — raw Pretalx API data
-- `content/talks/<slug>/index.md` — one page per talk (flat; slug conflicts get `-1`, `-2`, …)
-- `content/speakers/<slug>/index.md` — one page per speaker (same collision rules)
-- `content/talks/_index.md`, `content/speakers/_index.md`, `content/schedule/_index.md` — section pages (skipped if they already exist, unless `--force`)
+- `data/pretalx/2025/event.json` — the event's tags and layouts; marks the prefix for page generation
 
-### 4. Build your site
+Add `data/pretalx/` to `.gitignore` and run the fetch before every build.
+
+### 4. Add section pages
+
+Create `content/talks/_index.md`, `content/speakers/_index.md` and `content/schedule/_index.md` with the matching `pretalx-talks`, `pretalx-speakers` and `pretalx-schedule` layouts and a `pretalx_prefix`.
+
+### 5. Build your site
 
 ```bash
 hugo
 ```
 
-That's it. The module's layouts render everything from the data files.
+That's it. The module's content adapters create one page per talk and speaker, and its layouts render everything from the data files.
 
 ## CLI Reference
 
@@ -84,9 +88,6 @@ hugo-pretalx fetch [flags]
 | `--token` | | API token (or set `PRETALX_TOKEN` env var) |
 | `--output` | `.` | Hugo site root directory |
 | `--dry-run` | | Print what would be done without writing |
-| `--force` | | Overwrite existing content (preserves manual body content) |
-| `--data-only` | | Only write data files, skip content page generation |
-| `--prune` | | Delete generated pages that are no longer in the fetched set |
 | `--event` | | Only fetch this specific event |
 
 ### Install the CLI
@@ -159,35 +160,33 @@ hugo-pretalx fetch
 | `PRETALX_TOKEN` | API token for authenticated access |
 | `PRETALX_INSTANCE` | Overrides `instance` from config |
 
-## Generated File Structure
+## File Structure
 
 ```
 your-site/
-├── data/pretalx/
-│   ├── 2025/
-│   │   ├── talks.json          # Raw Pretalx API response
-│   │   └── speakers.json       # Raw Pretalx API response
+├── data/pretalx/               # Written by `hugo-pretalx fetch` (gitignore it)
 │   └── 2026/
-│       ├── talks.json
-│       └── speakers.json
-└── content/
+│       ├── talks.json          # Raw Pretalx API response
+│       ├── speakers.json       # Raw Pretalx API response
+│       └── event.json          # Tags and layouts; enables page generation for this prefix
+└── content/                    # Only hand-written files
     ├── talks/
-    │   ├── _index.md           # Talks list (hand-maintained or generated)
-    │   ├── my-talk/
-    │   │   └── index.md        # Talk page (tags include year)
-    │   └── my-talk-1/          # Conflict with an existing slug → -1, -2, …
+    │   ├── _index.md           # Talks list
+    │   └── my-talk/            # Optional hand-written override (see below)
     │       └── index.md
     ├── speakers/
-    │   ├── _index.md
-    │   └── jane-doe/
-    │       └── index.md
+    │   └── _index.md
     └── schedule/
-        └── _index.md           # Latest-year schedule (pretalx_prefix in front matter)
+        └── _index.md           # Schedule (pretalx_prefix in front matter)
 ```
 
-**Slugs:** Talk and speaker directory names are derived from title/name. If the path already exists and is not the same Pretalx item (`pretalx_code` + `pretalx_prefix`), the CLI tries `base-1`, `base-2`, and so on. Re-runs reuse the existing stub when the identity matches.
+**Generated pages:** The module's `content/talks/_content.gotmpl` and `content/speakers/_content.gotmpl` adapters add one page per talk and speaker of every prefix that has an `event.json`. Each page gets `layout`, `pretalx_code`, `pretalx_prefix` and `tags` params, plus the Pretalx talk image or speaker avatar as a `featured.<ext>` page resource (downloaded by Hugo; a failed download logs a warning and the fallback image is used). Pages always match the latest fetch, so withdrawn talks disappear on the next build.
 
-**Pruning:** Data files always mirror the API, but content pages are only ever added by default, so a talk that is withdrawn or excluded by `events[].states` leaves an empty page behind at its old URL. Run `hugo-pretalx fetch --prune` to make content match the fetch as well: it deletes page bundles whose `pretalx_prefix` matches the event being fetched and whose `pretalx_code` is no longer in the fetched set. Pages of other event prefixes, hand-written pages without `pretalx_code`, and generated pages with manually added body content are never removed. Combine with `--dry-run` first to see what would go.
+**Slugs:** Page paths are derived from title/name (lowercased, accents transliterated). Items are processed in `code` order; a slug already taken by a file in `content/<section>/` or by an earlier item gets `-1`, `-2`, and so on.
+
+**Hand-written overrides:** A page in `content/talks/` or `content/speakers/` whose YAML front matter has the same `pretalx_code` and `pretalx_prefix` replaces the generated page. Use it for extra body content or curated images.
+
+**Archived events:** A prefix whose data files are committed without an `event.json` provides data only. Its pages must be hand-written.
 
 ## Layouts
 
@@ -314,13 +313,13 @@ Set `speaker_layout` or `talk_layout` in the event config to use different layou
 ```
 
 ### Per-page override
-Edit a generated `index.md` and change its `layout` field.
+Add a hand-written page with the same `pretalx_code` and `pretalx_prefix` (see [File Structure](#file-structure)) and set its `layout` field.
 
 ## Data Format
 
-The data files contain the raw Pretalx API response — no transformations applied. Templates work directly with the [Pretalx API schema](https://docs.pretalx.org/api/resources/submissions/).
+The data files contain the Pretalx API response in the [Pretalx API schema](https://docs.pretalx.org/api/resources/submissions/), reduced to the public fields listed below (see `fields.go`). Private data an authenticated fetch returns — emails, reviews, scores, notes, invitation and access tokens — is never written. A talk's `recording` field is kept for `pretalxRecordingField`.
 
-Key fields available in templates:
+Fields available in templates:
 
 ```
 talk.code               — Unique Pretalx identifier
@@ -335,6 +334,9 @@ talk.do_not_record      — Boolean
 talk.slot.start         — ISO 8601 start time
 talk.slot.end           — ISO 8601 end time
 talk.slot.room          — Room name
+talk.image              — Talk image URL (or null)
+talk.resources[]        — Array of {resource, description}
+talk.state              — Submission state, e.g. "confirmed"
 talk.speakers[]         — Array of {name, code, biography, avatar}
 
 speaker.code            — Unique Pretalx identifier
@@ -359,7 +361,7 @@ steps:
 
   - uses: peaceiris/actions-hugo@v3
     with:
-      hugo-version: "0.139.0"
+      hugo-version: "0.147.8"
       extended: true
 
   - name: Fetch Pretalx data
@@ -373,7 +375,7 @@ steps:
 
 ## Offline / No Token
 
-If `PRETALX_TOKEN` is not set, the CLI fetches publicly available data (confirmed, scheduled talks only). If the API is unreachable, the site builds from whatever data files already exist — commit them to git as a fallback.
+If `PRETALX_TOKEN` is not set, the CLI fetches publicly available data (confirmed, scheduled talks only). Without a successful fetch there are no data files, so the site builds without talk and speaker pages; make the fetch a required CI step.
 
 ## Development
 

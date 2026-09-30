@@ -1,0 +1,22 @@
+{{/* Slug for a generated page. Changing these rules changes published URLs. */}}
+{{- $chars := dict
+  "à" "a" "á" "a" "â" "a" "ã" "a" "ä" "a" "å" "a"
+  "æ" "ae" "ç" "c" "è" "e" "é" "e" "ê" "e" "ë" "e"
+  "ì" "i" "í" "i" "î" "i" "ï" "i" "ð" "d" "ñ" "n"
+  "ò" "o" "ó" "o" "ô" "o" "õ" "o" "ö" "o" "ø" "o"
+  "ù" "u" "ú" "u" "û" "u" "ü" "u" "ý" "y" "ÿ" "y"
+  "ß" "ss" "þ" "th"
+  "ą" "a" "ć" "c" "ę" "e" "ł" "l" "ń" "n" "ś" "s"
+  "ź" "z" "ż" "z" "č" "c" "ď" "d" "ě" "e" "ň" "n"
+  "ř" "r" "š" "s" "ť" "t" "ž" "z" "ů" "u"
+  "ă" "a" "ș" "s" "ț" "t"
+  "ğ" "g" "ı" "i" "ş" "s"
+  "đ" "d"
+-}}
+{{- $s := lower . -}}
+{{- range $from, $to := $chars -}}
+  {{- $s = replace $s $from $to -}}
+{{- end -}}
+{{- $s = replaceRE `[^a-z0-9 _/-]` "" $s -}}
+{{- $s = replaceRE `[ _/-]+` "-" $s -}}
+{{- return strings.Trim $s "-" -}}

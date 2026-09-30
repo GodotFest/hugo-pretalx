@@ -29,8 +29,8 @@ type EventConfig struct {
 	Event string `json:"event"`
 
 	// Prefix is the data directory key and front-matter pretalx_prefix value.
-	// For example, "2025" produces data/pretalx/2025/; content pages are written
-	// flat under content/talks/ and content/speakers/ with tags for year filtering.
+	// For example, "2025" produces data/pretalx/2025/; the content adapters build
+	// pages flat under /talks/ and /speakers/ with tags for year filtering.
 	Prefix string `json:"prefix"`
 
 	// Tags are automatically applied to all generated content pages.

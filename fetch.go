@@ -14,9 +14,6 @@ func runFetch(args []string) error {
 	token := fs.String("token", "", "API token (overrides config and env)")
 	outputDir := fs.String("output", ".", "Hugo site root directory")
 	dryRun := fs.Bool("dry-run", false, "Print actions without writing files")
-	force := fs.Bool("force", false, "Overwrite existing content files")
-	dataOnly := fs.Bool("data-only", false, "Only write data files, skip content pages")
-	prune := fs.Bool("prune", false, "Delete generated pages that are no longer in the fetched set")
 	eventFilter := fs.String("event", "", "Only fetch this event (by slug)")
 
 	if err := fs.Parse(args); err != nil {
@@ -75,28 +72,15 @@ func runFetch(args []string) error {
 		speakers = filterSpeakersByTalks(speakers, talks)
 		fmt.Printf(" %d speakers (on included talks)\n", len(speakers))
 
-		// Write data files (always overwritten — they mirror the API)
-		talksPath := filepath.Join(*outputDir, "data", "pretalx", event.Prefix, "talks.json")
-		if err := writeDataFile(talksPath, talks, *dryRun); err != nil {
-			return err
+		dataDir := filepath.Join(*outputDir, "data", "pretalx", event.Prefix)
+		files := []dataFileRequest{
+			{Path: filepath.Join(dataDir, "talks.json"), Data: publicTalks(talks)},
+			{Path: filepath.Join(dataDir, "speakers.json"), Data: publicSpeakers(speakers)},
+			{Path: filepath.Join(dataDir, "event.json"), Data: newEventMeta(event)},
 		}
-
-		speakersPath := filepath.Join(*outputDir, "data", "pretalx", event.Prefix, "speakers.json")
-		if err := writeDataFile(speakersPath, speakers, *dryRun); err != nil {
-			return err
-		}
-
-		// Generate content pages
-		if !*dataOnly {
-			if err := generateContent(generateRequest{
-				OutputDir: *outputDir,
-				Event:     event,
-				Talks:     talks,
-				Speakers:  speakers,
-				DryRun:    *dryRun,
-				Force:     *force,
-				Prune:     *prune,
-			}); err != nil {
+		for _, file := range files {
+			file.DryRun = *dryRun
+			if err := writeDataFile(file); err != nil {
 				return err
 			}
 		}

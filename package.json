@@ -11,6 +11,6 @@
     "hugo:version": "hugo version"
   },
   "devDependencies": {
-    "hugo-extended": "0.120.4"
+    "hugo-extended": "0.147.8"
   }
 }

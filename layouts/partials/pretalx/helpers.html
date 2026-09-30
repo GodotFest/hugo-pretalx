@@ -56,8 +56,8 @@
   {{- trim $val " " | truncate $length -}}
 
 {{- else if eq $func "image" -}}
-  {{/* Images are always served from the site itself: hugo-pretalx mirrors them into
-       the page bundle at fetch time so Hugo can resize, convert and fingerprint them.
+  {{/* Images are always served from the site itself: the content adapters add them to
+       the page bundle at build time so Hugo can resize, convert and fingerprint them.
        Pretalx URLs are never emitted, so a missing image falls back to a site asset. */}}
   {{- $page := .page -}}
   {{- $spec := .spec | default "1200x800 webp q75" -}}
