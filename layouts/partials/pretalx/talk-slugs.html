@@ -1,0 +1,36 @@
+{{/*
+  pretalx/talk-slugs.html — Map of lowercased Pretalx talk code to the slug of its page in /talks
+  for one prefix. Slugs are shortened and deduplicated by the adapter, so links must resolve
+  through the page rather than re-slugify the title. Pages without pretalx_code (hand-written
+  archives) are matched by title.
+
+    {{ $slugs := partialCached "pretalx/talk-slugs.html" $prefix $prefix }}
+    {{ index $slugs (lower .code) }}
+*/}}
+{{- $prefix := printf "%v" . -}}
+{{- $slugs := dict -}}
+{{- $byTitle := dict -}}
+{{- with site.GetPage "/talks" -}}
+  {{- range .Pages -}}
+    {{- if .Params.pretalx_code -}}
+      {{- if eq (printf "%v" .Params.pretalx_prefix) $prefix -}}
+        {{- $slugs = merge $slugs (dict (lower .Params.pretalx_code) (path.Base .RelPermalink)) -}}
+      {{- end -}}
+    {{- else -}}
+      {{- $byTitle = merge $byTitle (dict (lower .Title) (path.Base .RelPermalink)) -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+{{- range index site.Data.pretalx $prefix "talks" -}}
+  {{- $code := lower (printf "%v" .code) -}}
+  {{- $title := .title -}}
+  {{- if reflect.IsMap $title -}}
+    {{- $title = index $title "en" -}}
+  {{- end -}}
+  {{- if not (index $slugs $code) -}}
+    {{- with index $byTitle (lower (printf "%v" $title)) -}}
+      {{- $slugs = merge $slugs (dict $code .) -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+{{- return $slugs -}}

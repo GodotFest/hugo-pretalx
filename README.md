@@ -182,7 +182,7 @@ your-site/
 
 **Generated pages:** The module's `content/talks/_content.gotmpl` and `content/speakers/_content.gotmpl` adapters add one page per talk and speaker of every prefix that has an `event.json`. Each page gets `layout`, `pretalx_code`, `pretalx_prefix` and `tags` params, plus the Pretalx talk image or speaker avatar as a `featured.<ext>` page resource (downloaded by Hugo; a failed download logs a warning and the fallback image is used). Pages always match the latest fetch, so withdrawn talks disappear on the next build.
 
-**Slugs:** Page paths are derived from title/name (lowercased, accents transliterated). Items are processed in `code` order; a slug already taken by a file in `content/<section>/` or by an earlier item gets `-1`, `-2`, and so on.
+**Slugs:** Page paths are derived from title/name (lowercased, accents transliterated). Talk slugs are shortened to the title before its subtitle (`:`, ` – `, ` — `, ` - `), capped at 5 words, so `Console Development Unlocked: Bringing Your Godot Game to PS5` becomes `console-development-unlocked`. Items are processed in `code` order. A talk slug already taken by a file in `content/talks/` or by an earlier item grows by one word of the title at a time; once the full title is taken, it gets `-1`, `-2`, and so on (speaker slugs go straight to the numbered suffix). Link to talk pages by `pretalx_code` (for example via `pretalx/talk-slugs.html`), not by re-slugifying the title.
 
 **Hand-written overrides:** A page in `content/talks/` or `content/speakers/` whose YAML front matter has the same `pretalx_code` and `pretalx_prefix` replaces the generated page. Use it for extra body content or curated images.
 

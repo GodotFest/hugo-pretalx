@@ -30,7 +30,7 @@
   {{/* Biography */}}
   {{- with $speaker.biography -}}
   <section class="pretalx-speaker__biography">
-    {{ . | markdownify }}
+    {{ $.RenderString (dict "display" "block") . }}
   </section>
   {{- end -}}
 

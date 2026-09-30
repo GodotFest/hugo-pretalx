@@ -64,7 +64,7 @@
   {{/* Abstract */}}
   {{- with $talk.abstract -}}
   <section class="pretalx-talk__abstract">
-    {{ . | markdownify }}
+    {{ $.RenderString (dict "display" "block") . }}
   </section>
   {{- end -}}
 
@@ -72,7 +72,7 @@
   {{- with $talk.description -}}
     {{- if ne . $talk.abstract -}}
     <section class="pretalx-talk__description">
-      {{ . | markdownify }}
+      {{ $.RenderString (dict "display" "block") . }}
     </section>
     {{- end -}}
   {{- end -}}

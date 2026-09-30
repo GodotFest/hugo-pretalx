@@ -34,7 +34,7 @@
       {{- $room = . -}}
     {{- end -}}
   {{- end -}}
-  {{- $slug := partial "pretalx/helpers.html" (dict "func" "slugify" "value" .title) -}}
+  {{- $slug := index (partialCached "pretalx/talk-slugs.html" $prefix $prefix) (lower .code) | default (partial "pretalx/helpers.html" (dict "func" "slugify" "value" .title)) -}}
   {{- $item := dict "start" .slot.start "end" .slot.end "title" .title "duration" .duration "room" $room "slug" $slug "code" .code -}}
   {{- if in $specialRooms $room -}}
     {{- $specials = $specials | append (dict "start" .slot.start "title" .title "duration" .duration "room" $room) -}}

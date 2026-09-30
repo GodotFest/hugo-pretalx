@@ -1,0 +1,2 @@
+{{/* Whether a generated page slug is already used earlier in the run or by a file in the section. */}}
+{{- return or (.used.Get .slug) (os.FileExists (printf "%s/%s" .dir .slug)) (os.FileExists (printf "%s/%s.md" .dir .slug)) -}}

@@ -1,0 +1,17 @@
+{{/*
+  Candidate slugs for a generated talk page, shortest first. The first is the title before its
+  subtitle (":", " – ", " — ", " - "), capped at 5 words; each next candidate adds one more word
+  of the full title slug. Changing these rules changes published URLs.
+*/}}
+{{- $full := partial "pretalx/adapter-slug.html" .title -}}
+{{- $candidates := slice -}}
+{{- with $full -}}
+  {{- $words := split . "-" -}}
+  {{- $head := index (split (replaceRE `\s+[–—-]\s+` ":" $.title) ":") 0 -}}
+  {{- $start := len (split (partial "pretalx/adapter-slug.html" $head) "-") -}}
+  {{- $start = cond (gt $start 5) 5 $start -}}
+  {{- range $n := seq $start (len $words) -}}
+    {{- $candidates = $candidates | append (delimit (first $n $words) "-") -}}
+  {{- end -}}
+{{- end -}}
+{{- return $candidates -}}

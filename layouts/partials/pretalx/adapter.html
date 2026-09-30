@@ -6,8 +6,9 @@
 
   Only prefixes with an event.json (written by `hugo-pretalx fetch`) get pages. Items that
   already have a hand-written page in the site's content/<section>/ (same pretalx_code and
-  pretalx_prefix in YAML front matter) are skipped, so authored pages always win. Slugs match
-  the CLI's slugify; a slug taken on disk or earlier in the run gets -1, -2, …
+  pretalx_prefix in YAML front matter) are skipped, so authored pages always win. Talk slugs
+  start short (see adapter-talk-slugs.html) and grow a word at a time when taken on disk or
+  earlier in the run; once the full title is taken, it gets -1, -2, …
 */}}
 
 {{- $section := .section -}}
@@ -33,14 +34,25 @@
       {{- end -}}
       {{- if and $code $title (not (index $authored (lower (printf "%s/%s" $prefix $code)))) -}}
         {{- $base := partial "pretalx/adapter-slug.html" $title | default (lower $code) -}}
-        {{- $slug := $base -}}
-        {{- $n := 0 -}}
-        {{- range seq 100 -}}
-          {{- if not (or ($used.Get $slug) (os.FileExists (printf "%s/%s" $contentDir $slug)) (os.FileExists (printf "%s/%s.md" $contentDir $slug))) -}}
+        {{- $candidates := slice $base -}}
+        {{- if $isTalk -}}
+          {{- $candidates = partial "pretalx/adapter-talk-slugs.html" (dict "title" $title) | default $candidates -}}
+        {{- end -}}
+        {{- $slug := "" -}}
+        {{- range $candidates -}}
+          {{- if not (partial "pretalx/adapter-slug-taken.html" (dict "used" $used "dir" $contentDir "slug" .)) -}}
+            {{- $slug = . -}}
             {{- break -}}
           {{- end -}}
-          {{- $n = add $n 1 -}}
-          {{- $slug = printf "%s-%d" $base $n -}}
+        {{- end -}}
+        {{- range $n := seq 100 -}}
+          {{- if $slug -}}
+            {{- break -}}
+          {{- end -}}
+          {{- $try := printf "%s-%d" $base $n -}}
+          {{- if not (partial "pretalx/adapter-slug-taken.html" (dict "used" $used "dir" $contentDir "slug" $try)) -}}
+            {{- $slug = $try -}}
+          {{- end -}}
         {{- end -}}
         {{- $used.Set $slug true -}}
 
