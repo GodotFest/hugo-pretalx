@@ -72,10 +72,17 @@
               {{- with .Err -}}
                 {{- warnf "[pretalx] Skipping image %s: %s" $url . -}}
               {{- else with .Value -}}
-                {{- $adapter.AddResource (dict
-                  "path" (printf "%s/featured%s" $slug $ext)
-                  "content" (dict "mediaType" .MediaType.Type "value" .Content)
-                ) -}}
+                {{- $src := . -}}
+                {{- with try ($src.Resize (printf "%dx webp q85" $src.Width)) -}}
+                  {{- with .Err -}}
+                    {{- warnf "[pretalx] Skipping image %s: %s" $url . -}}
+                  {{- else with .Value -}}
+                    {{- $adapter.AddResource (dict
+                      "path" (printf "%s/featured.webp" $slug)
+                      "content" (dict "mediaType" .MediaType.Type "value" .)
+                    ) -}}
+                  {{- end -}}
+                {{- end -}}
               {{- end -}}
             {{- end -}}
           {{- end -}}
