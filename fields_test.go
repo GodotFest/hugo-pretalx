@@ -36,6 +36,8 @@ func TestPublicSpeakersDropsPrivateFields(t *testing.T) {
 		"code":           "SPK",
 		"name":           "Jane",
 		"avatar":         "https://example.com/a.webp",
+		"tagline":        "Founder",
+		"answers":        []interface{}{float64(1)},
 		"email":          "jane@example.com",
 		"availabilities": []interface{}{},
 		"internal_notes": "private",
@@ -44,9 +46,10 @@ func TestPublicSpeakersDropsPrivateFields(t *testing.T) {
 	got := publicSpeakers(speakers)
 
 	want := []interface{}{map[string]interface{}{
-		"code":   "SPK",
-		"name":   "Jane",
-		"avatar": "https://example.com/a.webp",
+		"code":    "SPK",
+		"name":    "Jane",
+		"avatar":  "https://example.com/a.webp",
+		"tagline": "Founder",
 	}}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("publicSpeakers = %v, want %v", got, want)

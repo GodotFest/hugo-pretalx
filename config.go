@@ -46,6 +46,10 @@ type EventConfig struct {
 
 	// TalkLayout overrides the default layout for talk pages (default: "pretalx-talk").
 	TalkLayout string `json:"talk_layout,omitempty"`
+
+	// SpeakerTaglineQuestion is the label of a per-speaker Pretalx question whose
+	// answer is stored as speaker.tagline. Requires an API token. Example: "Title/Tagline".
+	SpeakerTaglineQuestion string `json:"speaker_tagline_question,omitempty"`
 }
 
 // LoadConfig reads configuration from the given JSON file path,

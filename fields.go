@@ -10,7 +10,7 @@ var (
 		"recording",
 	}
 	talkSpeakerFields = []string{"code", "name", "biography", "avatar"}
-	speakerFields     = []string{"code", "name", "biography", "avatar", "submissions"}
+	speakerFields     = []string{"code", "name", "biography", "avatar", "submissions", "tagline"}
 )
 
 // pickRequest selects the allowed fields from each map item.

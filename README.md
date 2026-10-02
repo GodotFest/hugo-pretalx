@@ -144,6 +144,7 @@ hugo-pretalx fetch
 | `events[].states` | Submission states to include (default: `["confirmed"]`). For testing you can widen this, e.g. `["confirmed", "accepted", "submitted"]`, to preview the program before talks are confirmed |
 | `events[].speaker_layout` | Override layout for speaker pages (default: `pretalx-speaker`) |
 | `events[].talk_layout` | Override layout for talk pages (default: `pretalx-talk`) |
+| `events[].speaker_tagline_question` | Label of a per-speaker question stored as `speaker.tagline` (for example `"Title/Tagline"`). Needs an API token; other answers are not written |
 
 ### Site parameters (hugo.toml or params.toml)
 
@@ -344,6 +345,7 @@ speaker.name            — Speaker name
 speaker.biography       — Biography text
 speaker.avatar          — Avatar URL (or null)
 speaker.submissions[]   — Array of talk codes
+speaker.tagline         — Answer to `speaker_tagline_question`, when configured
 ```
 
 ## CI/CD Integration

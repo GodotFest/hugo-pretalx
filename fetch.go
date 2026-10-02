@@ -65,7 +65,10 @@ func runFetch(args []string) error {
 
 		// Fetch speakers, limited to those on included talks
 		fmt.Printf("  Fetching speakers")
-		speakers, err := client.FetchSpeakers(event.Event)
+		speakers, err := client.FetchSpeakers(speakersRequest{
+			Event:           event.Event,
+			TaglineQuestion: event.SpeakerTaglineQuestion,
+		})
 		if err != nil {
 			return fmt.Errorf("fetching speakers for %s: %w", event.Event, err)
 		}

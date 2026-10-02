@@ -106,3 +106,30 @@ func TestNormalizeSubmissions(t *testing.T) {
 		t.Fatalf("expected avatar_url mapped to avatar, got %v", speaker["avatar"])
 	}
 }
+
+func TestSpeakerTagline(t *testing.T) {
+	answers := []interface{}{
+		map[string]interface{}{
+			"answer": "W4 Games",
+			"question": map[string]interface{}{
+				"question": map[string]interface{}{"en": "Company"},
+			},
+		},
+		map[string]interface{}{
+			"answer": map[string]interface{}{"en": "Engine Developer"},
+			"question": map[string]interface{}{
+				"question": map[string]interface{}{"en": "Title/Tagline", "de": "Titel"},
+			},
+		},
+	}
+
+	if got := speakerTagline(answers, "Title/Tagline"); got != "Engine Developer" {
+		t.Fatalf("speakerTagline = %q", got)
+	}
+	if got := speakerTagline(answers, "Missing"); got != "" {
+		t.Fatalf("expected no tagline, got %q", got)
+	}
+	if got := speakerTagline([]interface{}{float64(99)}, "Title/Tagline"); got != "" {
+		t.Fatalf("unexpanded answers should not yield a tagline, got %q", got)
+	}
+}

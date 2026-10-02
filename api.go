@@ -33,10 +33,10 @@ func NewClient(baseURL, token, lang string) *PretalxClient {
 
 // pagedResponse represents a single page of Pretalx API results.
 type pagedResponse struct {
-	Count    int             `json:"count"`
-	Next     *string         `json:"next"`
-	Previous *string         `json:"previous"`
-	Results  []interface{}   `json:"results"`
+	Count    int           `json:"count"`
+	Next     *string       `json:"next"`
+	Previous *string       `json:"previous"`
+	Results  []interface{} `json:"results"`
 }
 
 // httpStatusError is returned for non-200 API responses so callers can branch on status.
@@ -223,19 +223,83 @@ func (c *PretalxClient) FetchTalks(req talksRequest) ([]interface{}, error) {
 	return filterByState(talks, allowedStates(req.States)), nil
 }
 
+// speakersRequest describes which event's speakers to fetch and which Pretalx
+// question, if any, supplies speaker.tagline.
+type speakersRequest struct {
+	Event           string
+	TaglineQuestion string
+}
+
 // FetchSpeakers returns speakers for an event, normalized to the legacy shape
-// (avatar_url from newer Pretalx versions is exposed as avatar).
-func (c *PretalxClient) FetchSpeakers(event string) ([]interface{}, error) {
-	speakers, err := c.FetchAll(fetchRequest{Event: event, Endpoint: "speakers"})
+// (avatar_url from newer Pretalx versions is exposed as avatar). When
+// TaglineQuestion is set, the matching per-speaker answer is copied to tagline
+// and the raw answers are dropped.
+func (c *PretalxClient) FetchSpeakers(req speakersRequest) ([]interface{}, error) {
+	query := ""
+	if req.TaglineQuestion != "" {
+		query = "questions=all&expand=answers.question"
+	}
+	speakers, err := c.FetchAll(fetchRequest{Event: req.Event, Endpoint: "speakers", Query: query})
 	if err != nil {
 		return nil, err
 	}
 	for _, item := range speakers {
-		if m, ok := item.(map[string]interface{}); ok {
-			normalizeAvatar(m)
+		m, ok := item.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		normalizeAvatar(m)
+		if req.TaglineQuestion != "" {
+			if tagline := speakerTagline(m["answers"], req.TaglineQuestion); tagline != "" {
+				m["tagline"] = tagline
+			}
+			delete(m, "answers")
 		}
 	}
 	return speakers, nil
+}
+
+// speakerTagline returns the answer whose question label matches question.
+// Question text and answers may be plain strings or {"en": "..."} maps.
+func speakerTagline(answers interface{}, question string) string {
+	list, ok := answers.([]interface{})
+	if !ok {
+		return ""
+	}
+	want := strings.TrimSpace(question)
+	for _, item := range list {
+		ans, ok := item.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		q, ok := ans["question"].(map[string]interface{})
+		if !ok || localizedText(q["question"]) != want {
+			continue
+		}
+		if text := localizedText(ans["answer"]); text != "" {
+			return text
+		}
+	}
+	return ""
+}
+
+// localizedText reads a Pretalx string that may already be coerced to one
+// language or still be a language map. English wins when several languages exist.
+func localizedText(v interface{}) string {
+	switch t := v.(type) {
+	case string:
+		return strings.TrimSpace(t)
+	case map[string]interface{}:
+		if en, ok := t["en"].(string); ok && strings.TrimSpace(en) != "" {
+			return strings.TrimSpace(en)
+		}
+		for _, val := range t {
+			if s, ok := val.(string); ok && strings.TrimSpace(s) != "" {
+				return strings.TrimSpace(s)
+			}
+		}
+	}
+	return ""
 }
 
 // filterByState keeps only talks whose state is in the allowed set.
