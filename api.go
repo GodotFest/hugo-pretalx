@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -369,6 +371,204 @@ func normalizeAvatar(m map[string]interface{}) {
 	}
 	if url, ok := m["avatar_url"]; ok {
 		m["avatar"] = url
+	}
+}
+
+// scheduleBreak is one non-talk schedule slot (registration, breakfast, lunch, …).
+// The shape matches the specials list Hugo schedule layouts already accept.
+type scheduleBreak struct {
+	ID       string `json:"id"`
+	Title    string `json:"title"`
+	Room     string `json:"room"`
+	Duration int    `json:"duration"`
+	Start    string `json:"start"`
+}
+
+// breaksRequest describes which event's released-schedule breaks to fetch.
+type breaksRequest struct {
+	Event     string
+	BreakRoom string // pseudo room; copies of the same break collapse into it
+}
+
+// scheduleBreaksRequest is a decoded Pretalx schedule widget plus the pseudo room.
+type scheduleBreaksRequest struct {
+	Widget    map[string]interface{}
+	BreakRoom string
+}
+
+// FetchBreaks reads breaks from the released public schedule widget.
+// A 404 means nothing has been released yet, so the result is empty.
+// Breaks are not submissions, so the talks API never returns them.
+func (c *PretalxClient) FetchBreaks(req breaksRequest) ([]scheduleBreak, error) {
+	endpoint := fmt.Sprintf("%s/%s/schedule/widget/v2.json", c.BaseURL, url.PathEscape(req.Event))
+	body, status, err := c.fetchBody(endpoint)
+	if err != nil {
+		return nil, err
+	}
+	if status == http.StatusNotFound {
+		fmt.Print(" no released schedule")
+		return []scheduleBreak{}, nil
+	}
+	if status != http.StatusOK {
+		return nil, &httpStatusError{StatusCode: status, URL: endpoint, Body: truncate(string(body), 200)}
+	}
+
+	var widget map[string]interface{}
+	if err := json.Unmarshal(body, &widget); err != nil {
+		return nil, fmt.Errorf("parsing schedule widget: %w", err)
+	}
+	return scheduleBreaks(scheduleBreaksRequest{Widget: widget, BreakRoom: req.BreakRoom}), nil
+}
+
+// fetchBody performs one GET, retrying when Pretalx rate-limits the client.
+func (c *PretalxClient) fetchBody(rawURL string) ([]byte, int, error) {
+	for {
+		req, err := http.NewRequest(http.MethodGet, rawURL, nil)
+		if err != nil {
+			return nil, 0, fmt.Errorf("creating request: %w", err)
+		}
+		if c.Token != "" {
+			req.Header.Set("Authorization", "Token "+c.Token)
+		}
+		req.Header.Set("Accept", "application/json")
+
+		resp, err := c.HTTPClient.Do(req)
+		if err != nil {
+			return nil, 0, fmt.Errorf("request to %s failed: %w", rawURL, err)
+		}
+		body, err := io.ReadAll(resp.Body)
+		resp.Body.Close()
+		if err != nil {
+			return nil, 0, fmt.Errorf("reading response body: %w", err)
+		}
+		if resp.StatusCode == http.StatusTooManyRequests {
+			wait := 5 * time.Second
+			if ra := resp.Header.Get("Retry-After"); ra != "" {
+				if secs, err := strconv.Atoi(ra); err == nil {
+					wait = time.Duration(secs) * time.Second
+				}
+			}
+			fmt.Printf(" [rate limited, waiting %s]", wait)
+			time.Sleep(wait)
+			continue
+		}
+		return body, resp.StatusCode, nil
+	}
+}
+
+// scheduleBreaks keeps widget entries whose slot_type is "break".
+// When BreakRoom is set, entries that share a title and time become one slot in that room.
+func scheduleBreaks(req scheduleBreaksRequest) []scheduleBreak {
+	rooms := widgetRoomNames(req.Widget["rooms"])
+	breakRoom := strings.TrimSpace(req.BreakRoom)
+	talks, _ := req.Widget["talks"].([]interface{})
+
+	items := make([]scheduleBreak, 0)
+	seen := map[string]int{}
+	seenID := map[string]int{}
+
+	for _, item := range talks {
+		m, ok := item.(map[string]interface{})
+		if !ok || m["slot_type"] != "break" {
+			continue
+		}
+		title := localizedText(m["title"])
+		start, _ := m["start"].(string)
+		end, _ := m["end"].(string)
+		if title == "" || start == "" || end == "" {
+			continue
+		}
+		startAt, err := time.Parse(time.RFC3339, start)
+		if err != nil {
+			continue
+		}
+		endAt, err := time.Parse(time.RFC3339, end)
+		if err != nil || !endAt.After(startAt) {
+			continue
+		}
+		idNum, ok := jsonInt(m["id"])
+		if !ok {
+			continue
+		}
+		room := breakRoom
+		if room == "" {
+			roomID, ok := jsonInt(m["room"])
+			if !ok {
+				continue
+			}
+			room = rooms[roomID]
+			if room == "" {
+				continue
+			}
+		}
+
+		entry := scheduleBreak{
+			ID:       fmt.Sprintf("break-%d", idNum),
+			Title:    title,
+			Room:     room,
+			Duration: int(endAt.Sub(startAt).Minutes()),
+			Start:    start,
+		}
+		key := title + "\n" + start + "\n" + end
+		if breakRoom == "" {
+			key += "\n" + entry.Room
+		}
+		if prev, exists := seen[key]; exists {
+			if idNum < seenID[key] {
+				items[prev].ID = entry.ID
+				seenID[key] = idNum
+			}
+			continue
+		}
+		seen[key] = len(items)
+		seenID[key] = idNum
+		items = append(items, entry)
+	}
+
+	sort.Slice(items, func(i, j int) bool {
+		if items[i].Start != items[j].Start {
+			return items[i].Start < items[j].Start
+		}
+		if items[i].Title != items[j].Title {
+			return items[i].Title < items[j].Title
+		}
+		return items[i].ID < items[j].ID
+	})
+	return items
+}
+
+// widgetRoomNames maps a schedule-widget room id to its display name.
+func widgetRoomNames(rooms interface{}) map[int]string {
+	names := map[int]string{}
+	list, ok := rooms.([]interface{})
+	if !ok {
+		return names
+	}
+	for _, item := range list {
+		m, ok := item.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		id, ok := jsonInt(m["id"])
+		if !ok {
+			continue
+		}
+		if name := localizedText(m["name"]); name != "" {
+			names[id] = name
+		}
+	}
+	return names
+}
+
+// jsonInt reads a JSON number decoded into a float64 or int.
+func jsonInt(v interface{}) (int, bool) {
+	switch n := v.(type) {
+	case float64:
+		return int(n), true
+	case int:
+		return n, true
+	default:
+		return 0, false
 	}
 }
 

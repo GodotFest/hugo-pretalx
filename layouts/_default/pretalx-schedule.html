@@ -1,6 +1,7 @@
 {{ define "main" }}
 {{- $prefix := .Params.pretalx_prefix -}}
 {{- $allTalks := index site.Data.pretalx $prefix "talks" | default slice -}}
+{{- $breaks := index site.Data.pretalx $prefix "breaks" | default slice -}}
 {{- $specialRooms := site.Params.pretalxSpecialRooms | default slice -}}
 
 <header class="pretalx-schedule__header">
@@ -19,7 +20,7 @@
 </div>
 {{ end }}
 
-{{ partial "pretalx/schedule-timeline.html" (dict "talks" $allTalks "prefix" $prefix) }}
+{{ partial "pretalx/schedule-timeline.html" (dict "talks" $allTalks "prefix" $prefix "specials" $breaks) }}
 
 {{/* Build sessions (talks) and specials for ICS and other client scripts */}}
 {{- $sessions := slice -}}
@@ -41,6 +42,9 @@
   {{- else -}}
     {{- $sessions = $sessions | append $item -}}
   {{- end -}}
+{{- end -}}
+{{- range $breaks -}}
+  {{- $specials = $specials | append (dict "start" .start "title" .title "duration" .duration "room" .room) -}}
 {{- end -}}
 
 {{/* Inject schedule data as JSON for ICS and client-side interactivity */}}

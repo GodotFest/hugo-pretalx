@@ -50,6 +50,11 @@ type EventConfig struct {
 	// SpeakerTaglineQuestion is the label of a per-speaker Pretalx question whose
 	// answer is stored as speaker.tagline. Requires an API token. Example: "Title/Tagline".
 	SpeakerTaglineQuestion string `json:"speaker_tagline_question,omitempty"`
+
+	// BreakRoom is the schedule column for Pretalx breaks (registration, lunch, …).
+	// Breaks are often placed in every real room; this collapses copies that share
+	// a title and time into one pseudo room. Empty keeps each break in its Pretalx room.
+	BreakRoom string `json:"break_room,omitempty"`
 }
 
 // LoadConfig reads configuration from the given JSON file path,

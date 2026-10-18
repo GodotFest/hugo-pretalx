@@ -145,6 +145,7 @@ hugo-pretalx fetch
 | `events[].speaker_layout` | Override layout for speaker pages (default: `pretalx-speaker`) |
 | `events[].talk_layout` | Override layout for talk pages (default: `pretalx-talk`) |
 | `events[].speaker_tagline_question` | Label of a per-speaker question stored as `speaker.tagline` (for example `"Title/Tagline"`). Needs an API token; other answers are not written |
+| `events[].break_room` | Pseudo room for schedule breaks (registration, breakfast, lunch). Copies that share a title and time collapse into this one column. Empty keeps each break in its Pretalx room |
 
 ### Site parameters (hugo.toml or params.toml)
 
@@ -167,8 +168,9 @@ hugo-pretalx fetch
 your-site/
 ├── data/pretalx/               # Written by `hugo-pretalx fetch` (gitignore it)
 │   └── 2026/
-│       ├── talks.json          # Raw Pretalx API response
-│       ├── speakers.json       # Raw Pretalx API response
+│       ├── talks.json          # Confirmed submissions
+│       ├── speakers.json       # Speakers on those submissions
+│       ├── breaks.json         # Released schedule breaks (not submissions, so no talk pages)
 │       └── event.json          # Tags and layouts; enables page generation for this prefix
 └── content/                    # Only hand-written files
     ├── talks/

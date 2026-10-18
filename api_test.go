@@ -1,6 +1,9 @@
 package main
 
-import "testing"
+import (
+	"reflect"
+	"testing"
+)
 
 func talk(state string, speakerCodes ...string) map[string]interface{} {
 	speakers := make([]interface{}, 0, len(speakerCodes))
@@ -104,6 +107,73 @@ func TestNormalizeSubmissions(t *testing.T) {
 	speaker := m["speakers"].([]interface{})[0].(map[string]interface{})
 	if speaker["avatar"] != "https://example.com/a.webp" {
 		t.Fatalf("expected avatar_url mapped to avatar, got %v", speaker["avatar"])
+	}
+}
+
+func TestScheduleBreaksCollapseIntoPseudoRoom(t *testing.T) {
+	widget := map[string]interface{}{
+		"rooms": []interface{}{
+			map[string]interface{}{"id": float64(2), "name": map[string]interface{}{"en": "Barcelona"}},
+			map[string]interface{}{"id": float64(3), "name": map[string]interface{}{"en": "Foyer"}},
+		},
+		"talks": []interface{}{
+			map[string]interface{}{
+				"code": "TALK", "title": "A talk", "room": float64(2),
+				"start": "2026-11-03T10:00:00Z", "end": "2026-11-03T10:30:00Z",
+			},
+			map[string]interface{}{
+				"id": float64(39), "slot_type": "break", "room": float64(3),
+				"title": map[string]interface{}{"en": "Lunch (Foyer)"},
+				"start": "2026-11-03T13:00:00Z", "end": "2026-11-03T14:30:00Z",
+			},
+			map[string]interface{}{
+				"id": float64(36), "slot_type": "break", "room": float64(2),
+				"title": map[string]interface{}{"en": "Lunch (Foyer)"},
+				"start": "2026-11-03T13:00:00Z", "end": "2026-11-03T14:30:00Z",
+			},
+			map[string]interface{}{
+				"id": float64(34), "slot_type": "break", "room": float64(2),
+				"title": "Registration and Breakfast",
+				"start": "2026-11-03T09:00:00Z", "end": "2026-11-03T10:00:00Z",
+			},
+		},
+	}
+
+	got := scheduleBreaks(scheduleBreaksRequest{Widget: widget, BreakRoom: "General info"})
+	want := []scheduleBreak{
+		{ID: "break-34", Title: "Registration and Breakfast", Room: "General info", Duration: 60, Start: "2026-11-03T09:00:00Z"},
+		{ID: "break-36", Title: "Lunch (Foyer)", Room: "General info", Duration: 90, Start: "2026-11-03T13:00:00Z"},
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("scheduleBreaks = %#v, want %#v", got, want)
+	}
+}
+
+func TestScheduleBreaksKeepPretalxRooms(t *testing.T) {
+	widget := map[string]interface{}{
+		"rooms": []interface{}{
+			map[string]interface{}{"id": float64(2), "name": "Barcelona"},
+			map[string]interface{}{"id": float64(3), "name": "Foyer"},
+		},
+		"talks": []interface{}{
+			map[string]interface{}{
+				"id": float64(50), "slot_type": "break", "room": float64(3),
+				"title": "Breakfast", "start": "2026-11-04T09:00:00Z", "end": "2026-11-04T10:00:00Z",
+			},
+			map[string]interface{}{
+				"id": float64(51), "slot_type": "break", "room": float64(2),
+				"title": "Breakfast", "start": "2026-11-04T09:00:00Z", "end": "2026-11-04T10:00:00Z",
+			},
+		},
+	}
+
+	got := scheduleBreaks(scheduleBreaksRequest{Widget: widget, BreakRoom: ""})
+	rooms := map[string]bool{}
+	for _, item := range got {
+		rooms[item.Room] = true
+	}
+	if len(got) != 2 || !rooms["Barcelona"] || !rooms["Foyer"] {
+		t.Fatalf("expected one break per Pretalx room, got %#v", got)
 	}
 }
 

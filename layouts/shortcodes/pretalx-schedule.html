@@ -5,5 +5,6 @@
 {{- end -}}
 
 {{- $allTalks := index site.Data.pretalx $prefix "talks" | default slice -}}
+{{- $breaks := index site.Data.pretalx $prefix "breaks" | default slice -}}
 
-{{ partial "pretalx/schedule-timeline.html" (dict "talks" $allTalks "prefix" $prefix) }}
+{{ partial "pretalx/schedule-timeline.html" (dict "talks" $allTalks "prefix" $prefix "specials" $breaks) }}

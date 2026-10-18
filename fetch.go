@@ -75,10 +75,18 @@ func runFetch(args []string) error {
 		speakers = filterSpeakersByTalks(speakers, talks)
 		fmt.Printf(" %d speakers (on included talks)\n", len(speakers))
 
+		fmt.Printf("  Fetching breaks")
+		breaks, err := client.FetchBreaks(breaksRequest{Event: event.Event, BreakRoom: event.BreakRoom})
+		if err != nil {
+			return fmt.Errorf("fetching breaks for %s: %w", event.Event, err)
+		}
+		fmt.Printf(" %d breaks\n", len(breaks))
+
 		dataDir := filepath.Join(*outputDir, "data", "pretalx", event.Prefix)
 		files := []dataFileRequest{
 			{Path: filepath.Join(dataDir, "talks.json"), Data: publicTalks(talks)},
 			{Path: filepath.Join(dataDir, "speakers.json"), Data: publicSpeakers(speakers)},
+			{Path: filepath.Join(dataDir, "breaks.json"), Data: breaks},
 			{Path: filepath.Join(dataDir, "event.json"), Data: newEventMeta(event)},
 		}
 		for _, file := range files {
